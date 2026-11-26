@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-note-labels="show">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B0E14" />
+  <title>MEND — Daily Musical Surgery</title>
+  <meta name="description" content="MEND — a daily 4-bar groove arrives sabotaged with 4 music-theory bugs. Repair melody, chords, bass and cadence by ear." />
+  <meta property="og:title" content="MEND — Daily Musical Surgery" />
+  <meta property="og:description" content="Broken signal → healed groove. Fix today's 4 sabotaged layers by ear." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/brand/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="apple-mobile-web-app-title" content="MEND" />
+  <link rel="icon" type="image/svg+xml" href="/assets/brand/favicon.svg" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="stage-wrapper">
+    <main class="app-shell" id="appShell">
+      <!-- Top Diagnostic Bar (52px) -->
+      <header class="top-bar">
+        <div class="brand-cluster">
+          <img class="brand-icon" src="/assets/brand/favicon.svg" alt="MEND" />
+          <span class="brand-wordmark">MEND</span>
+          <span class="puzzle-pill" id="puzzlePill">#—</span>
+        </div>
+
+        <div class="telemetry-chip" aria-label="Tempo and Key">
+          <span class="telemetry-led" id="beatLed"></span>
+          <span id="telemetryText">—</span>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="icon-btn" id="soundToggleBtn" aria-label="Mute sound"></button>
+          <button type="button" class="icon-btn" id="helpBtn" aria-label="How to Play"></button>
+          <button type="button" class="icon-btn" id="statsBtn" aria-label="Stats and Badges"></button>
+          <button type="button" class="icon-btn" id="settingsBtn" aria-label="Theme and Label Settings"></button>
+        </div>
+      </header>
+
+      <!-- Workspace -->
+      <section class="workspace">
+        <div class="victory-banner" id="victoryBanner">
+          <div class="victory-stamp-row">
+            <img class="victory-stamp-img" id="victoryStampImg" alt="Diagnostic Seal" />
+            <div>
+              <h1 class="victory-title" id="victoryTitle">Track Restored!</h1>
+              <div class="victory-metrics" id="victoryMetrics"></div>
+            </div>
+          </div>
+          <button type="button" class="keycap-btn" id="openShareFromVictory" style="min-height:48px; background:var(--state-healed); color:var(--text-inverse); border-color:transparent;">Share</button>
+        </div>
+
+        <div class="ab-bar" id="abToggleBar" role="group" aria-label="Before and after comparison">
+          <button type="button" class="ab-btn" id="abBeforeBtn">Before (Broken)</button>
+          <button type="button" class="ab-btn is-after-active" id="abAfterBtn">After (Restored)</button>
+        </div>
+
+        <div class="timeline-shell">
+          <div class="playhead-track" aria-hidden="true">
+            <div class="playhead-beam" id="playheadBeam">
+              <div class="playhead-head"></div>
+            </div>
+          </div>
+
+          <div class="bar-ruler" id="barRuler"></div>
+
+          <div class="lanes-stack" id="lanesStack">
+            <!-- LANE 1: MELODY -->
+            <article class="lane-card is-expanded" data-lane="melody" data-status="broken" id="lane-melody">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="/assets/badges/layer-melody.png" alt="" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">1. Melody</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-melody"></div>
+                <div class="lane-badges" id="badges-melody"></div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt" id="prompt-melody"></p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="melody-grid" id="melodyGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row">
+                    <button type="button" class="keycap-btn" id="melodyDownBtn" aria-label="Nudge semitone down">▼ -1</button>
+                    <div class="keycap-readout" id="melodyReadout">
+                      <span id="melodyReadoutTag">BAR 1 · NOTE 1</span>
+                      <strong class="note-label-text" id="melodyCurrentNote"></strong>
+                    </div>
+                    <button type="button" class="keycap-btn" id="melodyUpBtn" aria-label="Nudge semitone up">▲ +1</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 2: CHORDS -->
+            <article class="lane-card is-collapsed" data-lane="chords" data-status="locked" id="lane-chords">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="/assets/badges/layer-chords.png" alt="" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">2. Chords</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-chords"></div>
+                <div class="lane-badges" id="badges-chords"></div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt" id="prompt-chords"></p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="four-bar-grid" id="chordsGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row">
+                    <button type="button" class="keycap-btn" id="chordRootPrev" aria-label="Previous chord root">◀</button>
+                    <div class="keycap-readout">
+                      <span>ROOT</span>
+                      <strong class="note-label-text" id="chordRootLabel"></strong>
+                    </div>
+                    <button type="button" class="keycap-btn" id="chordRootNext" aria-label="Next chord root">▶</button>
+                  </div>
+                  <div class="control-row" id="chordQualityRow"></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 3: BASS -->
+            <article class="lane-card is-collapsed" data-lane="bass" data-status="locked" id="lane-bass">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="/assets/badges/layer-bass.png" alt="" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">3. Bass</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-bass"></div>
+                <div class="lane-badges" id="badges-bass"></div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt" id="prompt-bass"></p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="chord-ref-strip" id="chordRefStrip"></div>
+                  <div class="four-bar-grid" id="bassGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row" id="bassControlRow">
+                    <button type="button" class="keycap-btn" id="bassDownBtn" aria-label="Nudge bass down">▼ -1</button>
+                    <button type="button" class="keycap-btn keycap-btn--flex" data-bass-pick="root"></button>
+                    <button type="button" class="keycap-btn keycap-btn--flex" data-bass-pick="third"></button>
+                    <button type="button" class="keycap-btn keycap-btn--flex" data-bass-pick="fifth"></button>
+                    <button type="button" class="keycap-btn" id="bassUpBtn" aria-label="Nudge bass up">▲ +1</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 4: CADENCE -->
+            <article class="lane-card is-collapsed" data-lane="cadence" data-status="locked" id="lane-cadence">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="/assets/badges/layer-cadence.png" alt="" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">4. Cadence</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-cadence"></div>
+                <div class="lane-badges" id="badges-cadence"></div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <div class="target-mood-pill" id="targetMoodPill"></div>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="four-bar-grid" id="cadenceGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="cadence-grid" id="cadenceOptions"></div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Transport Dock (76px) -->
+      <footer class="transport-dock">
+        <button type="button" class="play-btn" id="playPauseBtn" aria-label="Play loop"></button>
+        <div class="mix-toggle" role="group" aria-label="Mix focus">
+          <button type="button" class="mix-opt" id="soloMixBtn" aria-pressed="false"><span id="soloIcon"></span><span>Solo</span></button>
+          <button type="button" class="mix-opt is-selected" id="fullMixBtn" aria-pressed="true"><span id="mixIcon"></span><span>Mix</span></button>
+        </div>
+        <button type="button" class="check-cta" id="checkFixBtn"><span id="checkIcon"></span><span id="checkCtaLabel">Check Fix</span></button>
+      </footer>
+
+      <button type="button" class="resume-pill" id="resumeAudioPill" hidden>Tap to Resume Audio</button>
+
+      <!-- Optional Theory Diagnosis Card -->
+      <div class="theory-sheet" id="theorySheet" role="dialog" aria-label="Optional theory diagnosis">
+        <div class="theory-head">
+          <span class="theory-eyebrow">🎓 THEORY DIAGNOSIS · OPTIONAL ⭐</span>
+          <span class="status-pill status-pill--healed" id="theoryStatusPill">Layer Healed</span>
+        </div>
+        <p class="theory-prompt" id="theoryPrompt"></p>
+        <div class="theory-options" id="theoryOptions"></div>
+        <p class="theory-explain" id="theoryExplain" hidden></p>
+        <button type="button" class="skip-btn" id="theorySkipBtn">Skip → Next Layer</button>
+      </div>
+
+      <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
+
+      <!-- 1. Tactile Audio-Unlock Gate ("Power On") -->
+      <div class="overlay-backdrop is-open" id="unlockOverlay">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-label="Power on">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <svg viewBox="0 0 180 40" fill="none" style="height:30px; width:auto; color:var(--text-primary);" role="img" aria-label="MEND">
+              <defs>
+                <linearGradient id="mend-unlock-logo-grad" x1="4" y1="20" x2="36" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FF5468"/>
+                  <stop offset="46%" stop-color="#F5A623"/>
+                  <stop offset="54%" stop-color="#FFFFFF"/>
+                  <stop offset="64%" stop-color="#2EE6A6"/>
+                  <stop offset="100%" stop-color="#38D9F5"/>
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="36" height="36" rx="9" fill="#0B0E14" stroke="#2A3548" stroke-width="1.5"/>
+              <path d="M8 12H32M8 20H32M8 28H32M14 8V32M26 8V32" stroke="#1E2736" stroke-width="0.75"/>
+              <path d="M6.5 21L9.5 14L12.5 26L15.5 13L18.5 23L20.5 20C22.5 14 25.5 14 27.5 20C29.5 26 31.5 25 33.5 19" stroke="url(#mend-unlock-logo-grad)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="20.5" cy="20" r="2.2" fill="#2EE6A6"/>
+              <path d="M51 29V11H55.2L61 21.6L66.8 11H71V29H67.3V17.4L62.4 26.2H59.6L54.7 17.4V29H51Z" fill="currentColor"/>
+              <path d="M77.5 29V11H91.5V14.3H81.3V18.2H90.2V21.4H81.3V25.7H91.8V29H77.5Z" fill="currentColor"/>
+              <path d="M97.5 29V11H101.6L110.2 22.8V11H114V29H110L101.3 17.1V29H97.5Z" fill="currentColor"/>
+              <path d="M120.5 29V11H127.6C133.4 11 137 14.4 137 20C137 25.6 133.4 29 127.6 29H120.5ZM124.3 25.7H127.4C131.1 25.7 133.1 23.6 133.1 20C133.1 16.4 131.1 14.3 127.4 14.3H124.3V25.7Z" fill="currentColor"/>
+              <circle cx="145" cy="13.5" r="2.5" fill="#2EE6A6"/>
+              <rect x="143" y="20" width="4" height="9" rx="1.5" fill="#38D9F5" opacity="0.85"/>
+              <rect x="149.5" y="16" width="4" height="13" rx="1.5" fill="#A78BFA" opacity="0.85"/>
+              <rect x="156" y="22" width="4" height="7" rx="1.5" fill="#F5A623" opacity="0.85"/>
+              <rect x="162.5" y="13" width="4" height="16" rx="1.5" fill="#2EE6A6" opacity="0.95"/>
+            </svg>
+            <span class="puzzle-pill" id="unlockPill"></span>
+          </div>
+          <div class="unlock-scope">
+            <div class="unlock-meta" style="display:flex; justify-content:space-between; align-items:center; color:var(--state-glitch-text);">
+              <span id="unlockFaults">● 4 SIGNAL FAULTS DETECTED</span>
+              <span id="unlockKey"></span>
+            </div>
+            <svg viewBox="0 0 300 44" style="width:100%; height:44px; display:block;" aria-hidden="true">
+              <defs>
+                <linearGradient id="unlock-grad" x1="0" y1="22" x2="300" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FF5468"/>
+                  <stop offset="48%" stop-color="#F5A623"/>
+                  <stop offset="56%" stop-color="#2EE6A6"/>
+                  <stop offset="100%" stop-color="#38D9F5"/>
+                </linearGradient>
+              </defs>
+              <path d="M4 22 L18 10 L32 34 L46 8 L60 35 L74 12 L88 30 L102 14 L116 28 L130 22 C152 6 176 6 198 22 C220 38 244 38 266 22 C278 14 288 14 296 22"
+                    fill="none" stroke="url(#unlock-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="130" cy="22" r="3.5" fill="#FFFFFF"/>
+            </svg>
+            <ul class="unlock-bullets">
+              <li>Listen to the broken 4-bar groove layer by layer.</li>
+              <li>Nudge or flip each clash until it locks in.</li>
+              <li>Optional <strong>⭐ Theory Bonus</strong> after every fix.</li>
+            </ul>
+          </div>
+          <button type="button" class="primary-cta-lg" id="unlockAudioBtn">▶ Listen to Broken Track</button>
+          <button type="button" class="secondary-cta-lg" id="unlockMutedBtn">Start Visual-Only (Muted)</button>
+        </div>
+      </div>
+
+      <!-- 2. Share Modal -->
+      <div class="overlay-backdrop" id="shareModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+          <div class="modal-head">
+            <h2 class="modal-title" id="shareTitle">Share Diagnostic Card</h2>
+            <button type="button" class="close-btn" data-close-modal="shareModal" aria-label="Close">✕</button>
+          </div>
+          <div class="share-card-box" id="sharePreviewText"></div>
+          <button type="button" class="primary-cta-lg" id="copyShareBtn">Copy Share Card</button>
+        </div>
+      </div>
+
+      <!-- 3. How-to-Play Modal -->
+      <div class="overlay-backdrop" id="helpModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+          <div class="modal-head">
+            <h2 class="modal-title" id="helpTitle">15-Second Guide</h2>
+            <button type="button" class="close-btn" data-close-modal="helpModal" aria-label="Close">✕</button>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">1</div>
+            <div><strong>Spot the Sour Glitch</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Coral-red waveform bars mark today's sabotage. Toggle <strong>Solo</strong> to isolate tricky layers.</span></div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">2</div>
+            <div><strong>Nudge or Flip Live</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Repair Melody, Chords, Bass, and Cadence in sequence while the 4-bar groove loops.</span></div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">3</div>
+            <div><strong>Optional ⭐ Theory Bonus</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Name why it clashed for a gold ⭐, or tap <strong>Skip</strong> anytime to keep grooving.</span></div>
+          </div>
+          <p class="modal-sub">Every melody note sits on its bar's chord, every chord stands on its bass root, and Bar 4 must land the 🎯 target mood. 1 check per layer = 🟢 Clean Fix.</p>
+          <button type="button" class="primary-cta-lg" data-close-modal="helpModal">Got It — Start Mending</button>
+        </div>
+      </div>
+
+      <!-- 4. Stats & Badges Drawer -->
+      <div class="overlay-backdrop" id="statsModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+          <div class="modal-head">
+            <h2 class="modal-title" id="statsTitle">Lab Telemetry &amp; Seals</h2>
+            <button type="button" class="close-btn" data-close-modal="statsModal" aria-label="Close">✕</button>
+          </div>
+          <div class="stats-kpis" id="statsKpis"></div>
+          <div class="setting-label">PRECISION · TAPS PER RUN</div>
+          <div class="dist-rows" id="statsDist"></div>
+          <div class="setting-label">EARNED ACHIEVEMENT SEALS</div>
+          <div class="badges-shelf" id="statsSeals"></div>
+          <button type="button" class="secondary-cta-lg" data-close-modal="statsModal">Done</button>
+        </div>
+      </div>
+
+      <!-- 5. Settings Drawer -->
+      <div class="overlay-backdrop" id="settingsModal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+          <div class="modal-head">
+            <h2 class="modal-title" id="settingsTitle">Bench Settings</h2>
+            <button type="button" class="close-btn" data-close-modal="settingsModal" aria-label="Close">✕</button>
+          </div>
+          <div class="setting-block">
+            <div class="setting-label">LAB SURFACE THEME</div>
+            <div class="segmented-two">
+              <button type="button" class="keycap-btn is-active" id="themeDarkBtn">Dark Sound-Lab</button>
+              <button type="button" class="keycap-btn" id="themeLightBtn">Light Lab-Bench</button>
+            </div>
+          </div>
+          <div class="setting-block">
+            <div class="setting-label">NOTE &amp; CHORD LABELS</div>
+            <div class="segmented-two">
+              <button type="button" class="keycap-btn is-active" id="labelsShowBtn">Show Names</button>
+              <button type="button" class="keycap-btn" id="labelsEarBtn">Pure Ear</button>
+            </div>
+          </div>
+          <button type="button" class="primary-cta-lg" data-close-modal="settingsModal">Apply &amp; Return</button>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
