@@ -113,12 +113,24 @@ describe('share card', () => {
     const { shareText, headline } = buildShare(p, summarize(p, s));
     const lines = shareText.split('\n');
     expect(headline).toBe('🩺 MEND #51 — Track Restored!');
-    expect(lines).toHaveLength(6);
+    expect(lines).toHaveLength(7);
     expect(lines[1]).toBe(`🎵 Melody   🟡 (2 tries) ⭐ ${p.stages[0].theoryBonus.shareTag}`);
     expect(lines[2]).toBe(`🎹 Chords   🟢 (1 try)  ⭐ ${p.stages[1].theoryBonus.shareTag}`);
     expect(lines[3]).toMatch(/^🎸 Bass {5}🟢 \(1 try\) {2}⭐ /);
     expect(lines[4]).toMatch(/^✨ Cadence {2}🟢 \(1 try\) {2}⭐ /);
-    expect(lines[5]).toBe('Precision: 5/4 taps | Theory Aces: 4/4 ⭐');
+    expect(lines[5]).toBe('Checks: 5 (par 4) | Theory Aces: 4/4 ⭐');
+    expect(lines[6]).toBe('https://itailiors.github.io/mend/');
+  });
+});
+
+describe('chord theory card', () => {
+  // Playtest: a wrong-root bug's explanation only talked about a clash, which read as backing a distractor.
+  const KIND_WORDS = { third: 'wrong 3rd', root: 'wrong root', dim: 'flattens the 5th', seventh: 'b7', sus: '4th' } as const;
+  it('names the actual bug kind in the explanation', () => {
+    for (let d = 1; d <= 28; d++) {
+      const p = generatePuzzle(`2026-12-${String(d).padStart(2, '0')}`);
+      expect(p.stages[1].theoryBonus.explanation).toContain(KIND_WORDS[p.chordFault.kind]);
+    }
   });
 });
 

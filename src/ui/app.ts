@@ -373,6 +373,13 @@ export class MendApp {
     const k = p.groove.keyPc;
     const L = this.s.layers.chords;
     const broken = L.status === 'active' || this.healingLayer === 'chords';
+    // The melody lane collapses during this stage, so keep its notes readable above the chords.
+    $('melodyRefStrip').innerHTML = [0, 1, 2, 3]
+      .map((b) => {
+        const notes = this.s.values.melody.filter((_, i) => Math.floor(p.groove.melody[i]!.start / 16) === b).map((m) => midiName(m, k));
+        return `<div class="chord-ref-cell"><span class="note-label-text">♪ ${notes.join(' ')}</span><span class="note-ear-dot"></span></div>`;
+      })
+      .join('');
     $('chordsGrid').innerHTML = this.s.values.chords
       .map((c, i) => {
         const isFault = i === f.bar;
@@ -412,13 +419,20 @@ export class MendApp {
       .join('');
     const cur = this.s.values.bass[f.bar]!;
     const active = this.s.stage === 2 && !this.s.pendingTheory;
+    // Chips stay anonymous (A/B/C, shuffled per day) until the layer heals: labelling one "Root" gave the answer away.
     const roles = { root: 'Root', third: '3rd', fifth: '5th' } as const;
-    document.querySelectorAll<HTMLButtonElement>('[data-bass-pick]').forEach((btn) => {
-      const role = btn.dataset.bassPick as keyof typeof roles;
+    const solved = !broken && L.status !== 'locked';
+    const order = (['root', 'third', 'fifth'] as const).map((_, i, all) => all[(i + p.puzzleNumber) % 3]!);
+    const up = $('bassUpBtn');
+    order.forEach((role, pos) => {
+      const btn = document.querySelector<HTMLButtonElement>(`[data-bass-pick="${role}"]`);
+      if (!btn) return;
       const midi = f.chips[role];
-      btn.innerHTML = `${roles[role]}&nbsp;<span class="note-label-text bass-chip-note">(${midiName(midi, k)})</span>`;
+      const name = solved ? roles[role] : 'ABC'[pos]!;
+      btn.innerHTML = `${name}&nbsp;<span class="note-label-text bass-chip-note">(${midiName(midi, k)})</span>`;
       btn.classList.toggle('is-active', cur === midi);
       btn.disabled = !active;
+      up.before(btn);
     });
     $<HTMLButtonElement>('bassDownBtn').disabled = !active || cur <= f.min;
     $<HTMLButtonElement>('bassUpBtn').disabled = !active || cur >= f.max;
@@ -444,17 +458,17 @@ export class MendApp {
         (o, i) => `<button type="button" class="cadence-option ${this.s.cadenceIdx === i ? 'is-active' : ''}" data-cadence-pick="${i}" ${active ? '' : 'disabled'}>
           <span class="cadence-option-letter">OPTION ${'ABCD'[i]}</span>
           <span class="cadence-option-title note-label-text">${esc(o.label)}</span>
-          <span class="cadence-option-sub note-label-text">${esc(o.roman)} in ${keyShort(k)}</span></button>`,
+          ${broken || L.status === 'locked' ? '' : `<span class="cadence-option-sub note-label-text">${esc(o.roman)} in ${keyShort(k)}</span>`}</button>`,
       )
       .join('');
   }
 
   /** Reharm Daily strip count + the "next up" card and Lab chip inside the share modal. */
   private renderBridge(victory: boolean): void {
-    const done = victory ? 1 : 0;
-    $('daily-mini-count').textContent = `${done}/1 today`;
+    // MEND only knows its own result; "1/1 today" read as the whole daily sheet being done.
+    $('daily-mini-count').textContent = victory ? 'MEND done' : 'Daily sheet';
     $('daily-mini-dot').classList.toggle('is-done', victory);
-    $('daily-ritual-mini').setAttribute('aria-label', `Daily progress: ${done} of 1 puzzles played`);
+    $('daily-ritual-mini').setAttribute('aria-label', `${victory ? 'MEND done today. ' : ''}Open today's Reharm Daily sheet`);
     $<HTMLAnchorElement>('dailyBackLink').href = DAILY_HUB_URL;
     $<HTMLAnchorElement>('daily-ritual-mini').href = DAILY_HUB_URL;
     $<HTMLAnchorElement>('dailyNextPractice').href = LAB_CHANGES_URL;
@@ -477,7 +491,7 @@ export class MendApp {
     const stamp = STAMPS[summary.stampId];
     $<HTMLImageElement>('victoryStampImg').src = stamp.src;
     $<HTMLImageElement>('victoryStampImg').alt = `${stamp.name} seal`;
-    $('victoryMetrics').textContent = `Precision: ${summary.totalTaps}/4 taps · Theory Aces: ${summary.theoryAces}/4 ⭐ · Streak: ${streak}d`;
+    $('victoryMetrics').textContent = `Checks: ${summary.totalTaps} (par 4) · Theory Aces: ${summary.theoryAces}/4 ⭐ · Streak: ${streak}d`;
     $('abBeforeBtn').className = `ab-btn ${this.abMode === 'before' ? 'is-before-active' : ''}`;
     $('abAfterBtn').className = `ab-btn ${this.abMode === 'after' ? 'is-after-active' : ''}`;
     $('abBeforeBtn').setAttribute('aria-pressed', String(this.abMode === 'before'));

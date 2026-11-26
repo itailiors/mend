@@ -761,6 +761,15 @@
       color: var(--lane-chords-text);
     }
 
+    .melody-ref-strip .chord-ref-cell {
+      background: var(--lane-melody-soft);
+      border-color: rgba(56, 217, 245, 0.28);
+      color: var(--lane-melody-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .four-bar-grid {
       position: relative;
       z-index: 2;
@@ -1140,8 +1149,9 @@
       animation: sheet-up var(--dur-base) var(--ease-snappy);
     }
 
+    /* Slide only: a fading sheet lets the lanes show through mid-animation. */
     @keyframes sheet-up {
-      from { opacity: 0; transform: translateY(16px); }
+      from { transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -1448,7 +1458,7 @@
     .toast {
       position: absolute;
       left: 50%;
-      top: 60px;
+      top: 6px; /* over the Reharm Daily strip, not the MEND # · BPM · key header */
       transform: translateX(-50%) translateY(-10px);
       padding: 8px 14px;
       border-radius: var(--radius-pill);

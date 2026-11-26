@@ -23,22 +23,27 @@ export function melodyQuestion(rng: Rng, a: { sabName: string; targetName: strin
 
 const CHORD_ANSWERS: Record<ChordSabotageKind, { answer: string; tag: string }> = {
   third: { answer: 'Major vs. minor 3rd', tag: 'Wrong 3rd (Maj/min)' },
-  root: { answer: 'Wrong root under the bass', tag: 'Wrong Root' },
+  root: { answer: 'Chord built on the wrong root', tag: 'Wrong Root' },
   dim: { answer: 'Diminished b5 clash', tag: 'Flat 5th' },
   seventh: { answer: 'Out-of-key b7 added', tag: 'Wrong 7th' },
   sus: { answer: 'Sus4 fighting the 3rd', tag: 'Sus4 vs 3rd' },
 };
 
+/** Names the actual bug first, so the explanation backs the correct option rather than a distractor. */
+function chordWhy(a: { kind: ChordSabotageKind; sabLabel: string; targetLabel: string; rubChordName: string; rubMelodyName: string }): string {
+  const rub = `${a.rubChordName} grinds a half step against the melody's ${a.rubMelodyName}`;
+  switch (a.kind) {
+    case 'third': return `${a.sabLabel} has the wrong 3rd: its ${rub}. ${a.targetLabel} flips the 3rd so the melody note is a chord tone.`;
+    case 'root': return `${a.sabLabel} sits on the wrong root, a half step off, so its ${rub}. Moving the root gives ${a.targetLabel}, which holds the melody note.`;
+    case 'dim': return `${a.sabLabel} flattens the 5th: its ${rub}. ${a.targetLabel} restores the perfect 5th.`;
+    case 'seventh': return `${a.sabLabel} adds a b7 the melody doesn't want: its ${rub}. ${a.targetLabel} drops it.`;
+    case 'sus': return `${a.sabLabel} swaps the 3rd for a 4th: its ${rub}. ${a.targetLabel} puts the 3rd back.`;
+  }
+}
+
 export function chordQuestion(rng: Rng, a: { kind: ChordSabotageKind; sabLabel: string; targetLabel: string; bar: number; rubChordName: string; rubMelodyName: string }): TheoryBonusQuestion {
   const pool = [...Object.values(CHORD_ANSWERS).map((x) => x.answer), 'Parallel fifths', 'Missing bass octave'];
-  return build(
-    rng,
-    `What made ${a.sabLabel} clash in Bar ${a.bar + 1}?`,
-    CHORD_ANSWERS[a.kind].answer,
-    pool,
-    `${a.sabLabel} sounds ${a.rubChordName} while the melody sings ${a.rubMelodyName} — a half-step cross-relation. ${a.targetLabel} holds the melody note as a chord tone instead.`,
-    CHORD_ANSWERS[a.kind].tag,
-  );
+  return build(rng, `What made ${a.sabLabel} clash in Bar ${a.bar + 1}?`, CHORD_ANSWERS[a.kind].answer, pool, chordWhy(a), CHORD_ANSWERS[a.kind].tag);
 }
 
 export function bassQuestion(rng: Rng, a: { sabName: string; chordLabel: string; rootName: string; rubName: string }): TheoryBonusQuestion {
