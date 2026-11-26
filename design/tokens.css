@@ -1,0 +1,236 @@
+/* ============================================================================
+   MEND — Production Design Tokens
+   Aesthetic: Precision Sound-Lab Bench (Hi-Fi Oscilloscope x OP-1)
+   ============================================================================ */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-canvas: #0B0E14;
+  --bg-surface: #131822;
+  --bg-surface-elevated: #1B2230;
+  --bg-well: #080B10;
+  --bg-control: #212A3A;
+  --bg-control-hover: #2A3548;
+  --bg-control-active: #324056;
+  --bg-scrim: rgba(6, 8, 12, 0.78);
+
+  /* Borders */
+  --border-subtle: rgba(226, 234, 248, 0.08);
+  --border-default: rgba(226, 234, 248, 0.14);
+  --border-strong: rgba(226, 234, 248, 0.24);
+
+  /* Typography Ink */
+  --text-primary: #F2F6FC;
+  --text-secondary: #9AA7BD;
+  --text-muted: #7C8A9E;
+  --text-inverse: #080B10;
+
+  /* 4 Instrument-Lane Accents */
+  --lane-melody: #38D9F5;
+  --lane-melody-soft: rgba(56, 217, 245, 0.13);
+  --lane-melody-text: #7BE6FA;
+
+  --lane-chords: #A78BFA;
+  --lane-chords-soft: rgba(167, 139, 250, 0.14);
+  --lane-chords-text: #C4B5FD;
+
+  --lane-bass: #F5A623;
+  --lane-bass-soft: rgba(245, 166, 35, 0.14);
+  --lane-bass-text: #FCC668;
+
+  --lane-cadence: #2EE6A6;
+  --lane-cadence-soft: rgba(46, 230, 166, 0.14);
+  --lane-cadence-text: #6CF2C2;
+
+  /* Diagnostic Signal States */
+  --state-glitch: #FF5468;
+  --state-glitch-soft: rgba(255, 84, 104, 0.15);
+  --state-glitch-text: #FF8A98;
+
+  --state-focus: #FFD166;
+  --state-focus-soft: rgba(255, 209, 102, 0.14);
+  --state-focus-text: #FFE08A;
+
+  --state-healed: #2EE6A6;
+  --state-healed-soft: rgba(46, 230, 166, 0.14);
+  --state-healed-text: #6CF2C2;
+
+  --state-patched: #F5B731;
+  --state-patched-soft: rgba(245, 183, 49, 0.15);
+  --state-patched-text: #FBD374;
+
+  --state-theory: #FFE066;
+  --state-theory-soft: rgba(255, 224, 102, 0.16);
+  --state-theory-text: #FFE98A;
+
+  --state-locked: #64748B;
+  --state-locked-soft: rgba(148, 163, 184, 0.09);
+  --state-locked-text: #8C9BB0;
+
+  /* Hardware Shadows & Glows */
+  --shadow-keycap: 0 2px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-well: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-panel: 0 14px 36px rgba(0, 0, 0, 0.48);
+  --glow-healed: 0 0 20px rgba(46, 230, 166, 0.35);
+  --glow-glitch: 0 0 18px rgba(255, 84, 104, 0.35);
+  --glow-focus: 0 0 16px rgba(255, 209, 102, 0.28);
+  --playhead-line: rgba(242, 246, 252, 0.88);
+  --playhead-glow: 0 0 10px rgba(56, 217, 245, 0.45);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Light / Lab-Bench Surfaces */
+  --bg-canvas: #F2F1EC;
+  --bg-surface: #FAF9F5;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-well: #E6E4DC;
+  --bg-control: #EAE8E0;
+  --bg-control-hover: #DFDDD4;
+  --bg-control-active: #D4D1C6;
+  --bg-scrim: rgba(18, 24, 34, 0.54);
+
+  /* Borders */
+  --border-subtle: rgba(18, 24, 34, 0.09);
+  --border-default: rgba(18, 24, 34, 0.16);
+  --border-strong: rgba(18, 24, 34, 0.28);
+
+  /* Typography Ink */
+  --text-primary: #121822;
+  --text-secondary: #475467;
+  --text-muted: #5B6779;
+  --text-inverse: #FFFFFF;
+
+  /* 4 Instrument-Lane Accents (WCAG AA Calibrated) */
+  --lane-melody: #0284A8;
+  --lane-melody-soft: rgba(2, 132, 168, 0.11);
+  --lane-melody-text: #02607A;
+
+  --lane-chords: #6D4AFF;
+  --lane-chords-soft: rgba(109, 74, 255, 0.10);
+  --lane-chords-text: #502ED1;
+
+  --lane-bass: #C46E00;
+  --lane-bass-soft: rgba(196, 110, 0, 0.11);
+  --lane-bass-text: #8F4E00;
+
+  --lane-cadence: #0A875C;
+  --lane-cadence-soft: rgba(10, 135, 92, 0.11);
+  --lane-cadence-text: #076B48;
+
+  /* Diagnostic Signal States (WCAG AA Calibrated) */
+  --state-glitch: #D92D45;
+  --state-glitch-soft: rgba(217, 45, 69, 0.10);
+  --state-glitch-text: #B31D32;
+
+  --state-focus: #B87500;
+  --state-focus-soft: rgba(184, 117, 0, 0.12);
+  --state-focus-text: #8A5600;
+
+  --state-healed: #0A875C;
+  --state-healed-soft: rgba(10, 135, 92, 0.11);
+  --state-healed-text: #076B48;
+
+  --state-patched: #B26A00;
+  --state-patched-soft: rgba(178, 106, 0, 0.11);
+  --state-patched-text: #8A5000;
+
+  --state-theory: #A86400;
+  --state-theory-soft: rgba(168, 100, 0, 0.12);
+  --state-theory-text: #7E4A00;
+
+  --state-locked: #667085;
+  --state-locked-soft: rgba(102, 112, 133, 0.10);
+  --state-locked-text: #4E586B;
+
+  /* Lab-Bench Tactile Shadows */
+  --shadow-keycap: 0 2px 0 rgba(18, 24, 34, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-well: inset 0 2px 5px rgba(18, 24, 34, 0.10);
+  --shadow-panel: 0 14px 34px rgba(18, 24, 34, 0.16);
+  --glow-healed: 0 0 14px rgba(10, 135, 92, 0.22);
+  --glow-glitch: 0 0 14px rgba(217, 45, 69, 0.22);
+  --glow-focus: 0 0 12px rgba(184, 117, 0, 0.22);
+  --playhead-line: rgba(18, 24, 34, 0.82);
+  --playhead-glow: 0 0 8px rgba(2, 132, 168, 0.28);
+}
+
+/* Shared Non-Theme Design Tokens */
+:root {
+  /* Typography */
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-md: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.375rem;    /* 22px */
+  --text-2xl: 1.75rem;    /* 28px */
+
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Mobile-First Structural Dimensions */
+  --touch-target-min: 48px;
+  --top-bar-h: 52px;
+  --bar-ruler-h: 24px;
+  --lane-collapsed-h: 44px;
+  --dock-h: 76px;
+  --app-max-w: 760px;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  /* Z-Index Layers */
+  --z-base: 1;
+  --z-playhead: 15;
+  --z-dock: 30;
+  --z-sheet: 40;
+  --z-modal: 60;
+  --z-overlay: 80;
+  --z-toast: 100;
+
+  /* Motion Durations & Easings */
+  --dur-instant: 90ms;
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
+  --dur-accordion: 340ms;
+  --dur-shake: 360ms;
+  --dur-heal-sweep: 520ms;
+  --dur-victory-unfold: 640ms;
+
+  --ease-snappy: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 1ms;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-accordion: 1ms;
+    --dur-shake: 1ms;
+    --dur-heal-sweep: 1ms;
+    --dur-victory-unfold: 1ms;
+  }
+}

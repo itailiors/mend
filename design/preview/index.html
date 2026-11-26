@@ -1,0 +1,2730 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-note-labels="show">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>MEND #51 — Daily Musical Surgery (Visual Prototype)</title>
+  <link rel="icon" type="image/svg+xml" href="../../assets/brand/favicon.svg" />
+  <link rel="apple-touch-icon" href="../../assets/brand/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer;
+      border: 0;
+      background: none;
+      padding: 0;
+    }
+
+    button:focus-visible {
+      outline: 2px solid var(--state-focus);
+      outline-offset: 2px;
+    }
+
+    /* =====================================================================
+       App Layout Frame (Mobile-First 390x844 -> Centered 760px Desktop)
+       ===================================================================== */
+    .stage-wrapper {
+      width: 100%;
+      height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(56, 217, 245, 0.06), transparent 40%),
+        radial-gradient(circle at 82% 90%, rgba(46, 230, 166, 0.06), transparent 42%),
+        var(--bg-canvas);
+    }
+
+    .app-shell {
+      position: relative;
+      width: 100%;
+      max-width: var(--app-max-w);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-canvas);
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      .stage-wrapper {
+        padding: 16px;
+        align-items: center;
+      }
+      .app-shell {
+        height: min(820px, calc(100dvh - 32px));
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-default);
+        box-shadow: var(--shadow-panel);
+      }
+    }
+
+    /* =====================================================================
+       Top Diagnostic Bar (52px)
+       ===================================================================== */
+    .top-bar {
+      height: var(--top-bar-h);
+      flex: 0 0 var(--top-bar-h);
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 10;
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .brand-wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.06em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .puzzle-pill {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 5px;
+      border-radius: var(--radius-xs);
+      background: var(--bg-control);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .qa-chip-mobile {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 4px 6px;
+      border-radius: var(--radius-xs);
+      background: var(--state-focus-soft);
+      border: 1px solid rgba(255, 209, 102, 0.38);
+      color: var(--state-focus-text);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    @media (min-width: 1024px) {
+      .qa-chip-mobile { display: none; }
+    }
+
+    .telemetry-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 7px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .telemetry-bpm-unit {
+      display: none;
+    }
+
+    @media (min-width: 440px) {
+      .top-bar { padding: 0 12px; gap: 8px; }
+      .telemetry-chip { font-size: 11px; padding: 4px 9px; gap: 5px; }
+      .telemetry-bpm-unit { display: inline; }
+    }
+
+    .telemetry-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--state-healed);
+      box-shadow: 0 0 6px var(--state-healed);
+      transition: transform var(--dur-instant) var(--ease-snappy);
+    }
+
+    .telemetry-led.is-beat {
+      transform: scale(1.45);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      width: 31px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: background var(--dur-fast), color var(--dur-fast);
+    }
+
+    @media (min-width: 440px) {
+      .top-actions { gap: 4px; }
+      .icon-btn { width: 36px; height: 36px; }
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-control);
+      color: var(--text-primary);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon-btn.is-muted {
+      color: var(--state-glitch-text);
+      background: var(--state-glitch-soft);
+    }
+
+    /* =====================================================================
+       Workspace & Synchronized 4-Bar Playhead
+       ===================================================================== */
+    .workspace {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 6px 10px 8px;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .timeline-shell {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Bar Ruler (24px) */
+    .bar-ruler {
+      height: var(--bar-ruler-h);
+      flex: 0 0 var(--bar-ruler-h);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .ruler-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 7px;
+      border-right: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      transition: background var(--dur-instant), color var(--dur-instant);
+    }
+
+    .ruler-bar:last-child { border-right: 0; }
+
+    .ruler-bar.is-current-bar {
+      background: var(--bg-control);
+      color: var(--text-primary);
+    }
+
+    .ruler-ticks {
+      display: flex;
+      gap: 3px;
+    }
+
+    .ruler-tick {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--border-strong);
+    }
+
+    .ruler-tick.is-on {
+      background: var(--state-healed);
+      box-shadow: 0 0 5px var(--state-healed);
+    }
+
+    /* Unified Playhead Hairline spanning ruler & lanes */
+    .playhead-track {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      z-index: var(--z-playhead);
+      overflow: hidden;
+    }
+
+    .playhead-beam {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 2px;
+      background: var(--playhead-line);
+      box-shadow: var(--playhead-glow);
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .playhead-head {
+      position: absolute;
+      top: 0;
+      left: -4px;
+      width: 10px;
+      height: 8px;
+      background: var(--state-healed);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    /* =====================================================================
+       4-Layer Staged Accordion Lanes
+       ===================================================================== */
+    .lanes-stack {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .lane-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      transition:
+        flex var(--dur-accordion) var(--ease-snappy),
+        border-color var(--dur-fast),
+        opacity var(--dur-fast),
+        box-shadow var(--dur-fast);
+    }
+
+    .lane-card[data-lane="melody"]  { --accent: var(--lane-melody);  --accent-soft: var(--lane-melody-soft);  --accent-text: var(--lane-melody-text); }
+    .lane-card[data-lane="chords"]  { --accent: var(--lane-chords);  --accent-soft: var(--lane-chords-soft);  --accent-text: var(--lane-chords-text); }
+    .lane-card[data-lane="bass"]    { --accent: var(--lane-bass);    --accent-soft: var(--lane-bass-soft);    --accent-text: var(--lane-bass-text); }
+    .lane-card[data-lane="cadence"] { --accent: var(--lane-cadence); --accent-soft: var(--lane-cadence-soft); --accent-text: var(--lane-cadence-text); }
+
+    .lane-card.is-collapsed {
+      flex: 0 0 var(--lane-collapsed-h);
+      height: var(--lane-collapsed-h);
+    }
+
+    .lane-card.is-expanded {
+      flex: 1 1 auto;
+      min-height: 0;
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .lane-card.is-solo-dimmed {
+      opacity: 0.42;
+    }
+
+    /* Victory mode equal height lanes */
+    .lanes-stack.is-victory .lane-card {
+      flex: 1 1 0;
+      height: auto;
+      min-height: 46px;
+    }
+
+    /* Scanline Heal Overlay */
+    .heal-scanline {
+      position: absolute;
+      inset: 0;
+      width: 45%;
+      background: linear-gradient(90deg, transparent 0%, rgba(46, 230, 166, 0.36) 78%, rgba(255, 255, 255, 0.9) 98%, transparent 100%);
+      transform: translate3d(-120%, 0, 0);
+      pointer-events: none;
+      z-index: 25;
+      opacity: 0;
+    }
+
+    .lane-card.is-healing .heal-scanline {
+      opacity: 1;
+      animation: heal-sweep var(--dur-heal-sweep) var(--ease-snappy) forwards;
+    }
+
+    @keyframes heal-sweep {
+      0% { transform: translate3d(-110%, 0, 0); opacity: 0.95; }
+      100% { transform: translate3d(260%, 0, 0); opacity: 0; }
+    }
+
+    @keyframes glitch-shake {
+      0%, 100% { transform: translateX(0); }
+      18% { transform: translateX(-7px); }
+      36% { transform: translateX(6px); }
+      54% { transform: translateX(-4px); }
+      72% { transform: translateX(3px); }
+    }
+
+    .is-shaking {
+      animation: glitch-shake var(--dur-shake) var(--ease-snappy);
+      border-color: var(--state-glitch) !important;
+      box-shadow: var(--glow-glitch) !important;
+    }
+
+    /* Collapsed / Header Strip (44px) */
+    .lane-strip {
+      position: relative;
+      height: var(--lane-collapsed-h);
+      flex: 0 0 var(--lane-collapsed-h);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 8px;
+    }
+
+    .lane-card.is-expanded .lane-strip {
+      height: 36px;
+      flex: 0 0 36px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--accent-soft);
+    }
+
+    .lane-id-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 96px;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .lane-emblem {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--border-default);
+      flex-shrink: 0;
+    }
+
+    .lane-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--state-locked);
+      flex-shrink: 0;
+    }
+
+    .lane-card[data-status="broken"] .lane-led {
+      background: var(--state-glitch);
+      box-shadow: 0 0 7px var(--state-glitch);
+    }
+
+    .lane-card[data-status="healed"] .lane-led {
+      background: var(--state-healed);
+      box-shadow: 0 0 7px var(--state-healed);
+    }
+
+    .lane-card[data-status="patched"] .lane-led {
+      background: var(--state-patched);
+      box-shadow: 0 0 7px var(--state-patched);
+    }
+
+    .lane-name {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-primary);
+    }
+
+    .lane-card.is-expanded .lane-name {
+      color: var(--accent-text);
+    }
+
+    /* Mini Waveform SVG inside collapsed strip */
+    .mini-wave-wrap {
+      flex: 1 1 auto;
+      height: 28px;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .lane-card.is-expanded .mini-wave-wrap {
+      display: none;
+    }
+
+    .mini-wave-svg {
+      width: 100%;
+      height: 26px;
+      display: block;
+    }
+
+    .wave-glitch-anim {
+      animation: wave-jitter 1.2s steps(2, end) infinite;
+    }
+
+    .wave-healed-anim {
+      transform-origin: center;
+      animation: wave-breathe 2.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes wave-jitter {
+      0% { transform: translateY(0); opacity: 0.95; }
+      50% { transform: translateY(-1px); opacity: 0.78; }
+      100% { transform: translateY(1px); opacity: 1; }
+    }
+
+    @keyframes wave-breathe {
+      0% { transform: scaleY(0.92); }
+      100% { transform: scaleY(1.06); }
+    }
+
+    .lane-badges {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 7px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .status-pill--locked {
+      background: var(--state-locked-soft);
+      color: var(--state-locked-text);
+    }
+
+    .status-pill--broken {
+      background: var(--state-glitch-soft);
+      color: var(--state-glitch-text);
+      border-color: rgba(255, 84, 104, 0.25);
+    }
+
+    .status-pill--healed {
+      background: var(--state-healed-soft);
+      color: var(--state-healed-text);
+      border-color: rgba(46, 230, 166, 0.28);
+    }
+
+    .status-pill--patched {
+      background: var(--state-patched-soft);
+      color: var(--state-patched-text);
+      border-color: rgba(245, 183, 49, 0.28);
+    }
+
+    .star-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px 6px;
+      border-radius: var(--radius-pill);
+      background: var(--state-theory-soft);
+      color: var(--state-theory-text);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .star-badge.is-pop {
+      animation: star-pop 380ms var(--ease-spring);
+    }
+
+    @keyframes star-pop {
+      0% { transform: scale(0.35) rotate(-18deg); }
+      65% { transform: scale(1.22) rotate(5deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+    /* =====================================================================
+       Expanded Stage Editor Body
+       ===================================================================== */
+    .lane-body {
+      display: none;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 8px 10px 10px;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .lane-card.is-expanded .lane-body {
+      display: flex;
+    }
+
+    .stage-prompt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .stage-prompt {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.3;
+    }
+
+    .target-mood-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--lane-cadence-soft);
+      border: 1px solid rgba(46, 230, 166, 0.35);
+      color: var(--lane-cadence-text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      width: fit-content;
+    }
+
+    /* Recessed Oscilloscope Well for Editor Slots */
+    .editor-well {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-well);
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    /* Faint 4-bar vertical grid lines inside editor well */
+    .well-bar-lines {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      pointer-events: none;
+    }
+
+    .well-bar-col {
+      border-right: 1px dashed var(--border-subtle);
+    }
+
+    .well-bar-col:last-child { border-right: 0; }
+
+    /* Pure Ear Mode hides explicit note/chord text */
+    [data-note-labels="ear-only"] .note-label-text {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    [data-note-labels="ear-only"] .note-ear-dot {
+      display: inline-block;
+    }
+
+    .note-ear-dot {
+      display: none;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ---------------- Stage 1: Melody 8-Note Piano Roll ---------------- */
+    .melody-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      height: 100%;
+      min-height: 116px;
+      align-items: end;
+    }
+
+    .melody-col {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .melody-note-btn {
+      position: relative;
+      width: 100%;
+      min-height: 48px;
+      height: 52px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-control);
+      border: 1.5px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--lane-melody-text);
+      transition: transform var(--dur-fast) var(--ease-snappy), border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
+    }
+
+    .melody-note-btn.is-broken {
+      background: var(--state-glitch-soft);
+      border-color: var(--state-glitch);
+      color: var(--state-glitch-text);
+      box-shadow: var(--glow-glitch);
+    }
+
+    .melody-note-btn.is-selected {
+      border-color: var(--state-focus);
+      box-shadow: 0 0 0 2px var(--state-focus-soft), var(--glow-focus);
+    }
+
+    .melody-note-btn.is-healed-slot {
+      background: var(--state-healed-soft);
+      border-color: var(--state-healed);
+      color: var(--state-healed-text);
+      box-shadow: var(--glow-healed);
+    }
+
+    .melody-note-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* ---------------- Stages 2, 3, 4: 4-Bar Card Grids ---------------- */
+    .chord-ref-strip {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .chord-ref-cell {
+      padding: 4px 6px;
+      border-radius: var(--radius-xs);
+      background: var(--lane-chords-soft);
+      border: 1px solid rgba(167, 139, 250, 0.28);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--lane-chords-text);
+    }
+
+    .four-bar-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      flex: 1 1 auto;
+      min-height: 72px;
+      align-items: stretch;
+    }
+
+    .bar-slot-card {
+      min-height: 54px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1.5px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-instant);
+    }
+
+    .bar-slot-card:active { transform: translateY(1px); }
+
+    .bar-slot-card.is-broken {
+      background: var(--state-glitch-soft);
+      border-color: var(--state-glitch);
+      box-shadow: var(--glow-glitch);
+    }
+
+    .bar-slot-card.is-selected {
+      border-color: var(--state-focus);
+      box-shadow: 0 0 0 2px var(--state-focus-soft), var(--glow-focus);
+    }
+
+    .bar-slot-card.is-locked-bar {
+      opacity: 0.72;
+    }
+
+    .bar-slot-tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .bar-slot-val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+    }
+
+    .bar-slot-card.is-broken .bar-slot-val {
+      color: var(--state-glitch-text);
+    }
+
+    /* =====================================================================
+       Stage Tactile Control Decks (All Primary Targets >= 48px Height)
+       ===================================================================== */
+    .control-deck {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .keycap-btn {
+      min-height: var(--touch-target-min);
+      min-width: var(--touch-target-min);
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      transition: background var(--dur-fast), border-color var(--dur-fast), transform var(--dur-instant);
+    }
+
+    .keycap-btn:hover { background: var(--bg-control-hover); }
+    .keycap-btn:active { transform: translateY(1px); background: var(--bg-control-active); }
+
+    .keycap-btn.is-active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .keycap-btn--flex {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0 6px;
+    }
+
+    .keycap-readout {
+      flex: 1 1 auto;
+      min-height: var(--touch-target-min);
+      padding: 0 10px;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .keycap-readout strong {
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .cadence-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .cadence-option {
+      min-height: 50px;
+      padding: 6px 10px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1.5px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .cadence-option.is-active {
+      background: var(--lane-cadence-soft);
+      border-color: var(--lane-cadence);
+    }
+
+    .cadence-option-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .cadence-option-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* =====================================================================
+       Victory Screen Inside Workspace
+       ===================================================================== */
+    .victory-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface-elevated);
+      border: 1px solid rgba(46, 230, 166, 0.35);
+      box-shadow: var(--glow-healed);
+      flex-shrink: 0;
+    }
+
+    .victory-banner.is-visible { display: flex; }
+
+    .victory-stamp-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .victory-stamp-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      flex-shrink: 0;
+      border: 1px solid var(--border-strong);
+    }
+
+    .victory-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+    }
+
+    .victory-metrics {
+      margin-top: 3px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--state-healed-text);
+    }
+
+    .ab-bar {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .ab-bar.is-visible { display: grid; }
+
+    .ab-btn {
+      min-height: var(--touch-target-min);
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1.5px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .ab-btn.is-after-active {
+      background: var(--state-healed-soft);
+      border-color: var(--state-healed);
+      color: var(--state-healed-text);
+    }
+
+    .ab-btn.is-before-active {
+      background: var(--state-glitch-soft);
+      border-color: var(--state-glitch);
+      color: var(--state-glitch-text);
+    }
+
+    /* =====================================================================
+       Persistent Bottom Transport Dock (76px)
+       ===================================================================== */
+    .transport-dock {
+      height: var(--dock-h);
+      flex: 0 0 var(--dock-h);
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-default);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: var(--z-dock);
+    }
+
+    .play-btn {
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow-keycap);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+    }
+
+    .play-btn.is-playing {
+      background: var(--state-healed-soft);
+      border-color: var(--state-healed);
+      color: var(--state-healed-text);
+    }
+
+    .play-btn svg { width: 22px; height: 22px; }
+
+    .mix-toggle {
+      height: 52px;
+      padding: 2px;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: stretch;
+      gap: 2px;
+      flex: 0 0 auto;
+    }
+
+    .mix-opt {
+      min-height: 48px;
+      padding: 0 9px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: background var(--dur-fast), color var(--dur-fast);
+    }
+
+    .mix-opt svg { width: 14px; height: 14px; }
+
+    .mix-opt.is-selected {
+      background: var(--bg-control);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-keycap);
+    }
+
+    .check-cta {
+      flex: 1 1 auto;
+      min-height: 50px;
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+      background: var(--state-healed);
+      color: var(--text-inverse);
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), var(--glow-healed);
+      transition: transform var(--dur-instant), filter var(--dur-fast);
+    }
+
+    .check-cta:active { transform: translateY(1px); }
+    .check-cta svg { width: 18px; height: 18px; }
+
+    /* =====================================================================
+       Optional Theory Diagnosis Micro-Card (Non-Blocking Sheet)
+       ===================================================================== */
+    .theory-sheet {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: calc(var(--dock-h) + 8px);
+      background: var(--bg-surface-elevated);
+      border: 1.5px solid var(--state-theory);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      box-shadow: var(--shadow-panel);
+      z-index: var(--z-sheet);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .theory-sheet.is-open {
+      display: flex;
+      animation: sheet-up var(--dur-base) var(--ease-snappy);
+    }
+
+    @keyframes sheet-up {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .theory-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .theory-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--state-theory-text);
+      letter-spacing: 0.03em;
+    }
+
+    .theory-prompt {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    .theory-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .theory-pill {
+      min-height: var(--touch-target-min);
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1px solid var(--border-default);
+      box-shadow: var(--shadow-keycap);
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .theory-pill.is-correct {
+      background: var(--state-theory-soft);
+      border-color: var(--state-theory);
+      color: var(--state-theory-text);
+    }
+
+    .theory-pill.is-wrong {
+      background: var(--state-glitch-soft);
+      border-color: var(--state-glitch);
+      color: var(--state-glitch-text);
+    }
+
+    .skip-btn {
+      min-height: var(--touch-target-min);
+      width: 100%;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-default);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* =====================================================================
+       Overlays & Modals (Unlock Gate, Share, Help, Stats, Settings, QA)
+       ===================================================================== */
+    .overlay-backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-scrim);
+      backdrop-filter: blur(8px);
+      z-index: var(--z-overlay);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .overlay-backdrop.is-open { display: flex; }
+
+    .modal-card {
+      width: 100%;
+      max-width: 360px;
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
+      border-radius: var(--radius-xl);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow-panel);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .close-btn {
+      min-width: 48px;
+      min-height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Unlock Gate specifics */
+    .unlock-scope {
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .unlock-bullets {
+      margin: 0;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .primary-cta-lg {
+      min-height: 54px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      background: var(--state-healed);
+      color: var(--text-inverse);
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35), var(--glow-healed);
+    }
+
+    .secondary-cta-lg {
+      min-height: 48px;
+      width: 100%;
+      border-radius: var(--radius-md);
+      background: var(--bg-control);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Share Card Preview */
+    .share-card-box {
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-default);
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
+
+    /* How-to-Play Steps */
+    .howto-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .howto-num {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      border-radius: 50%;
+      background: var(--lane-melody-soft);
+      color: var(--lane-melody-text);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Stats & Badges */
+    .stats-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .kpi-box {
+      padding: 10px 6px;
+      border-radius: var(--radius-md);
+      background: var(--bg-well);
+      border: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .badges-shelf {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .badge-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .badge-item img {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      border: 1px solid var(--border-default);
+    }
+
+    .badge-item span {
+      font-size: 10px;
+      color: var(--text-secondary);
+      line-height: 1.2;
+    }
+
+    /* Settings Toggles */
+    .setting-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .segmented-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    /* Diagnostic Toast */
+    .toast {
+      position: absolute;
+      left: 50%;
+      top: 60px;
+      transform: translateX(-50%) translateY(-10px);
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow-panel);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      z-index: var(--z-toast);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--dur-fast), transform var(--dur-fast);
+    }
+
+    .toast.is-shown {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.is-warn {
+      border-color: var(--state-glitch);
+      color: var(--state-glitch-text);
+    }
+
+    .toast.is-ok {
+      border-color: var(--state-healed);
+      color: var(--state-healed-text);
+    }
+
+    /* =====================================================================
+       Desktop Lab QA Side Rail (>= 1024px Only, Outside App Console)
+       ===================================================================== */
+    .qa-rail {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      .stage-wrapper {
+        gap: 18px;
+      }
+      .qa-rail {
+        display: flex;
+        flex-direction: column;
+        width: 230px;
+        max-height: min(820px, calc(100dvh - 32px));
+        overflow-y: auto;
+        padding: 14px;
+        border-radius: var(--radius-xl);
+        background: var(--bg-surface);
+        border: 1px solid var(--border-default);
+        gap: 8px;
+      }
+      .qa-rail-title {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--state-focus-text);
+        margin-bottom: 2px;
+      }
+      .qa-jump-btn {
+        min-height: 36px;
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        background: var(--bg-control);
+        border: 1px solid var(--border-subtle);
+        text-align: left;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .qa-jump-btn:hover { background: var(--bg-control-hover); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .wave-glitch-anim, .wave-healed-anim, .is-shaking, .star-badge.is-pop {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage-wrapper">
+    <!-- Main Mobile-First Studio Console -->
+    <main class="app-shell" id="appShell">
+      <!-- Top Bar (52px) -->
+      <header class="top-bar">
+        <div class="brand-cluster">
+          <img class="brand-icon" src="../../assets/brand/favicon.svg" alt="MEND" />
+          <span class="brand-wordmark">MEND</span>
+          <span class="puzzle-pill">#51</span>
+          <button type="button" class="qa-chip-mobile" id="openQaBtn" aria-label="Open Prototype QA Switcher">QA</button>
+        </div>
+
+        <div class="telemetry-chip" aria-label="Tempo and Key">
+          <span class="telemetry-led" id="beatLed"></span>
+          <span>96<span class="telemetry-bpm-unit"> BPM</span> · C MAJ</span>
+        </div>
+
+        <div class="top-actions">
+          <button type="button" class="icon-btn" id="soundToggleBtn" aria-label="Toggle Sound">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" id="soundIconSvg">
+              <polygon points="4 9.5 8.5 9.5 13 5.5 13 18.5 8.5 14.5 4 14.5" fill="currentColor" fill-opacity="0.16"/>
+              <path d="M16.2 8.8a4.5 4.5 0 0 1 0 6.4"/>
+              <path d="M18.8 6.4a8 8 0 0 1 0 11.2"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn" id="helpBtn" aria-label="How to Play">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M9.5 9.2a2.6 2.6 0 0 1 4.9 1c0 1.8-2.4 2.3-2.4 3.8"/>
+              <circle cx="12" cy="17" r="0.8" fill="currentColor"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn" id="statsBtn" aria-label="Stats and Badges">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="13" width="3.5" height="6.5" rx="1"/>
+              <rect x="10.25" y="7" width="3.5" height="12.5" rx="1"/>
+              <rect x="16.5" y="10" width="3.5" height="9.5" rx="1"/>
+              <line x1="3" y1="19.5" x2="21" y2="19.5"/>
+            </svg>
+          </button>
+          <button type="button" class="icon-btn" id="settingsBtn" aria-label="Theme and Label Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Workspace -->
+      <section class="workspace">
+        <!-- Victory Header (shown after Stage 4) -->
+        <div class="victory-banner" id="victoryBanner">
+          <div class="victory-stamp-row">
+            <img class="victory-stamp-img" id="victoryStampImg" src="../../assets/badges/stamp-chief-surgeon.png" alt="Diagnostic Seal" />
+            <div>
+              <h1 class="victory-title" id="victoryTitle">Track Restored!</h1>
+              <div class="victory-metrics" id="victoryMetrics">Precision: 4/4 taps · Theory Aces: 0/4 ⭐</div>
+            </div>
+          </div>
+          <button type="button" class="keycap-btn" id="openShareFromVictory" style="min-height:48px; background:var(--state-healed); color:var(--text-inverse); border-color:transparent;">
+            Share
+          </button>
+        </div>
+
+        <!-- Before / After A/B Switch (shown in Victory) -->
+        <div class="ab-bar" id="abToggleBar">
+          <button type="button" class="ab-btn" id="abBeforeBtn">Before (Broken)</button>
+          <button type="button" class="ab-btn is-after-active" id="abAfterBtn">After (Restored)</button>
+        </div>
+
+        <!-- Synchronized 4-Bar Timeline Container -->
+        <div class="timeline-shell">
+          <!-- Playhead spanning Ruler + 4 Lanes -->
+          <div class="playhead-track" aria-hidden="true">
+            <div class="playhead-beam" id="playheadBeam">
+              <div class="playhead-head"></div>
+            </div>
+          </div>
+
+          <!-- 24px Bar Ruler -->
+          <div class="bar-ruler" id="barRuler">
+            <div class="ruler-bar is-current-bar" data-bar="0">
+              <span>BAR 1</span>
+              <span class="ruler-ticks"><i class="ruler-tick is-on"></i><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i></span>
+            </div>
+            <div class="ruler-bar" data-bar="1">
+              <span>BAR 2</span>
+              <span class="ruler-ticks"><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i></span>
+            </div>
+            <div class="ruler-bar" data-bar="2">
+              <span>BAR 3</span>
+              <span class="ruler-ticks"><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i></span>
+            </div>
+            <div class="ruler-bar" data-bar="3">
+              <span>BAR 4</span>
+              <span class="ruler-ticks"><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i><i class="ruler-tick"></i></span>
+            </div>
+          </div>
+
+          <!-- 4 Accordion Lanes -->
+          <div class="lanes-stack" id="lanesStack">
+            <!-- LANE 1: MELODY -->
+            <article class="lane-card is-expanded" data-lane="melody" data-status="broken" id="lane-melody">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="../../assets/badges/layer-melody.png" alt="Melody" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">1. Melody</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-melody"></div>
+                <div class="lane-badges" id="badges-melody">
+                  <span class="status-pill status-pill--broken">Fault · Bar 2</span>
+                </div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt">Tap the sour note in Bar 2 and nudge into C Major.</p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="melody-grid" id="melodyGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row">
+                    <button type="button" class="keycap-btn" id="melodyDownBtn" aria-label="Nudge Semitone Down">▼ -1</button>
+                    <div class="keycap-readout" id="melodyReadout">
+                      <span>BAR 2 · NOTE 3</span>
+                      <strong class="note-label-text" id="melodyCurrentNote">F#4</strong>
+                    </div>
+                    <button type="button" class="keycap-btn" id="melodyUpBtn" aria-label="Nudge Semitone Up">▲ +1</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 2: CHORDS -->
+            <article class="lane-card is-collapsed" data-lane="chords" data-status="locked" id="lane-chords">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="../../assets/badges/layer-chords.png" alt="Chords" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">2. Chords</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-chords"></div>
+                <div class="lane-badges" id="badges-chords">
+                  <span class="status-pill status-pill--locked">🔒 Pending</span>
+                </div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt">Flip Bar 3's chord quality or root until the clash vanishes.</p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="four-bar-grid" id="chordsGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row">
+                    <button type="button" class="keycap-btn" id="chordRootPrev" aria-label="Previous Chord Root">◀</button>
+                    <div class="keycap-readout">
+                      <span>ROOT</span>
+                      <strong class="note-label-text" id="chordRootLabel">A</strong>
+                    </div>
+                    <button type="button" class="keycap-btn" id="chordRootNext" aria-label="Next Chord Root">▶</button>
+                  </div>
+                  <div class="control-row" id="chordQualityRow"></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 3: BASS -->
+            <article class="lane-card is-collapsed" data-lane="bass" data-status="locked" id="lane-bass">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="../../assets/badges/layer-bass.png" alt="Bass" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">3. Bass</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-bass"></div>
+                <div class="lane-badges" id="badges-bass">
+                  <span class="status-pill status-pill--locked">🔒 Pending</span>
+                </div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <p class="stage-prompt">Ground Bar 3's bass cleanly under the A Min chord.</p>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="chord-ref-strip">
+                    <div class="chord-ref-cell"><span class="note-label-text">C Maj</span><span class="note-ear-dot"></span></div>
+                    <div class="chord-ref-cell"><span class="note-label-text">G7</span><span class="note-ear-dot"></span></div>
+                    <div class="chord-ref-cell"><span class="note-label-text">A min</span><span class="note-ear-dot"></span></div>
+                    <div class="chord-ref-cell"><span class="note-label-text">F Maj</span><span class="note-ear-dot"></span></div>
+                  </div>
+                  <div class="four-bar-grid" id="bassGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="control-row">
+                    <button type="button" class="keycap-btn" id="bassDownBtn">▼ -1</button>
+                    <button type="button" class="keycap-btn keycap-btn--flex" data-bass-pick="A2">Root (A2)</button>
+                    <button type="button" class="keycap-btn keycap-btn--flex" data-bass-pick="C3">3rd (C3)</button>
+                    <button type="button" class="keycap-btn" id="bassUpBtn">▲ +1</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- LANE 4: CADENCE -->
+            <article class="lane-card is-collapsed" data-lane="cadence" data-status="locked" id="lane-cadence">
+              <div class="heal-scanline"></div>
+              <div class="lane-strip">
+                <div class="lane-id-group">
+                  <img class="lane-emblem" src="../../assets/badges/layer-cadence.png" alt="Cadence" />
+                  <span class="lane-led"></span>
+                  <span class="lane-name">4. Cadence</span>
+                </div>
+                <div class="mini-wave-wrap" id="wave-cadence"></div>
+                <div class="lane-badges" id="badges-cadence">
+                  <span class="status-pill status-pill--locked">🔒 Pending</span>
+                </div>
+              </div>
+              <div class="lane-body">
+                <div class="stage-prompt-row">
+                  <div class="target-mood-pill">🎯 Target: Dreamy Lydian #4 Lift</div>
+                </div>
+                <div class="editor-well">
+                  <div class="well-bar-lines"><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div><div class="well-bar-col"></div></div>
+                  <div class="four-bar-grid" id="cadenceGrid"></div>
+                </div>
+                <div class="control-deck">
+                  <div class="cadence-grid" id="cadenceOptions"></div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Transport Dock (76px) -->
+      <footer class="transport-dock">
+        <button type="button" class="play-btn is-playing" id="playPauseBtn" aria-label="Pause Loop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" id="playIconSvg">
+            <rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" fill-opacity="0.18"/>
+            <rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" fill-opacity="0.18"/>
+          </svg>
+        </button>
+
+        <div class="mix-toggle" role="group" aria-label="Mix Focus">
+          <button type="button" class="mix-opt" id="soloMixBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 13V12a8 8 0 0 1 16 0v1"/>
+              <rect x="3" y="13" width="4" height="6.5" rx="1.75"/>
+              <rect x="17" y="13" width="4" height="6.5" rx="1.75"/>
+            </svg>
+            <span>Solo</span>
+          </button>
+          <button type="button" class="mix-opt is-selected" id="fullMixBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/>
+            </svg>
+            <span>Mix</span>
+          </button>
+        </div>
+
+        <button type="button" class="check-cta" id="checkFixBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8 12.5l2.7 2.8L16.5 9"/>
+          </svg>
+          <span id="checkCtaLabel">Check Fix</span>
+        </button>
+      </footer>
+
+      <!-- Optional Theory Diagnosis Card -->
+      <div class="theory-sheet" id="theorySheet" role="dialog" aria-label="Optional Theory Diagnosis">
+        <div class="theory-head">
+          <span class="theory-eyebrow">🎓 THEORY DIAGNOSIS · OPTIONAL ⭐</span>
+          <span class="status-pill status-pill--healed">Layer Healed</span>
+        </div>
+        <p class="theory-prompt" id="theoryPrompt"></p>
+        <div class="theory-options" id="theoryOptions"></div>
+        <button type="button" class="skip-btn" id="theorySkipBtn">Skip → Next Layer</button>
+      </div>
+
+      <!-- Toast Notification -->
+      <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
+
+      <!-- 1. Tactile Audio-Unlock Gate ("Power On") -->
+      <div class="overlay-backdrop is-open" id="unlockOverlay">
+        <div class="modal-card">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <svg viewBox="0 0 180 40" fill="none" style="height:30px; width:auto; color:var(--text-primary);" role="img" aria-label="MEND">
+              <defs>
+                <linearGradient id="mend-unlock-logo-grad" x1="4" y1="20" x2="36" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FF5468"/>
+                  <stop offset="46%" stop-color="#F5A623"/>
+                  <stop offset="54%" stop-color="#FFFFFF"/>
+                  <stop offset="64%" stop-color="#2EE6A6"/>
+                  <stop offset="100%" stop-color="#38D9F5"/>
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="36" height="36" rx="9" fill="#0B0E14" stroke="#2A3548" stroke-width="1.5"/>
+              <path d="M8 12H32M8 20H32M8 28H32M14 8V32M26 8V32" stroke="#1E2736" stroke-width="0.75"/>
+              <path d="M6.5 21L9.5 14L12.5 26L15.5 13L18.5 23L20.5 20C22.5 14 25.5 14 27.5 20C29.5 26 31.5 25 33.5 19" stroke="url(#mend-unlock-logo-grad)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="20.5" cy="20" r="2.2" fill="#2EE6A6"/>
+              <path d="M51 29V11H55.2L61 21.6L66.8 11H71V29H67.3V17.4L62.4 26.2H59.6L54.7 17.4V29H51Z" fill="currentColor"/>
+              <path d="M77.5 29V11H91.5V14.3H81.3V18.2H90.2V21.4H81.3V25.7H91.8V29H77.5Z" fill="currentColor"/>
+              <path d="M97.5 29V11H101.6L110.2 22.8V11H114V29H110L101.3 17.1V29H97.5Z" fill="currentColor"/>
+              <path d="M120.5 29V11H127.6C133.4 11 137 14.4 137 20C137 25.6 133.4 29 127.6 29H120.5ZM124.3 25.7H127.4C131.1 25.7 133.1 23.6 133.1 20C133.1 16.4 131.1 14.3 127.4 14.3H124.3V25.7Z" fill="currentColor"/>
+              <circle cx="145" cy="13.5" r="2.5" fill="#2EE6A6"/>
+              <rect x="143" y="20" width="4" height="9" rx="1.5" fill="#38D9F5" opacity="0.85"/>
+              <rect x="149.5" y="16" width="4" height="13" rx="1.5" fill="#A78BFA" opacity="0.85"/>
+              <rect x="156" y="22" width="4" height="7" rx="1.5" fill="#F5A623" opacity="0.85"/>
+              <rect x="162.5" y="13" width="4" height="16" rx="1.5" fill="#2EE6A6" opacity="0.95"/>
+            </svg>
+            <span class="puzzle-pill">#51 · 96 BPM</span>
+          </div>
+          <div class="unlock-scope">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:11px; color:var(--state-glitch-text);">
+              <span>● 4 SIGNAL FAULTS DETECTED</span>
+              <span>KEY: C MAJ</span>
+            </div>
+            <svg viewBox="0 0 300 44" style="width:100%; height:44px; display:block;">
+              <defs>
+                <linearGradient id="unlock-grad" x1="0" y1="22" x2="300" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FF5468"/>
+                  <stop offset="48%" stop-color="#F5A623"/>
+                  <stop offset="56%" stop-color="#2EE6A6"/>
+                  <stop offset="100%" stop-color="#38D9F5"/>
+                </linearGradient>
+              </defs>
+              <path d="M4 22 L18 10 L32 34 L46 8 L60 35 L74 12 L88 30 L102 14 L116 28 L130 22 C152 6 176 6 198 22 C220 38 244 38 266 22 C278 14 288 14 296 22"
+                    fill="none" stroke="url(#unlock-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="130" cy="22" r="3.5" fill="#FFFFFF"/>
+            </svg>
+            <ul class="unlock-bullets">
+              <li>Listen to the broken 4-bar groove layer by layer.</li>
+              <li>Nudge or flip each clash until it locks in.</li>
+              <li>Optional <strong>⭐ Theory Bonus</strong> after every fix.</li>
+            </ul>
+          </div>
+          <button type="button" class="primary-cta-lg" id="unlockAudioBtn">▶ Listen to Broken Track</button>
+          <button type="button" class="secondary-cta-lg" id="unlockMutedBtn">Start Visual-Only (Muted)</button>
+        </div>
+      </div>
+
+      <!-- 2. Share Modal -->
+      <div class="overlay-backdrop" id="shareModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 class="modal-title">Share Diagnostic Card</h2>
+            <button type="button" class="close-btn" data-close-modal="shareModal" aria-label="Close">✕</button>
+          </div>
+          <div class="share-card-box" id="sharePreviewText"></div>
+          <button type="button" class="primary-cta-lg" id="copyShareBtn">Copy Share Card</button>
+        </div>
+      </div>
+
+      <!-- 3. How-to-Play Modal -->
+      <div class="overlay-backdrop" id="helpModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 class="modal-title">15-Second Guide</h2>
+            <button type="button" class="close-btn" data-close-modal="helpModal" aria-label="Close">✕</button>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">1</div>
+            <div><strong>Spot the Sour Glitch</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Coral-red waveform bars mark today's sabotage. Toggle <strong>Solo</strong> to isolate tricky layers.</span></div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">2</div>
+            <div><strong>Nudge or Flip Live</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Repair Melody, Chords, Bass, and Cadence in sequence while the 4-bar groove loops.</span></div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-num">3</div>
+            <div><strong>Optional ⭐ Theory Bonus</strong><br><span style="font-size:12.5px; color:var(--text-secondary);">Name why it clashed for a gold ⭐, or tap <strong>Skip</strong> anytime to keep grooving.</span></div>
+          </div>
+          <button type="button" class="primary-cta-lg" data-close-modal="helpModal">Got It — Start Mending</button>
+        </div>
+      </div>
+
+      <!-- 4. Stats & Badges Drawer -->
+      <div class="overlay-backdrop" id="statsModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 class="modal-title">Lab Telemetry & Seals</h2>
+            <button type="button" class="close-btn" data-close-modal="statsModal" aria-label="Close">✕</button>
+          </div>
+          <div class="stats-kpis">
+            <div class="kpi-box"><div class="kpi-val">7</div><div class="kpi-label">Streak</div></div>
+            <div class="kpi-box"><div class="kpi-val">88%</div><div class="kpi-label">Clean Fix</div></div>
+            <div class="kpi-box"><div class="kpi-val">4.6</div><div class="kpi-label">Avg Taps</div></div>
+          </div>
+          <div class="setting-label">EARNED ACHIEVEMENT SEALS</div>
+          <div class="badges-shelf">
+            <div class="badge-item"><img src="../../assets/badges/stamp-chief-surgeon.png" alt="Chief Surgeon" /><span>Chief Surgeon</span></div>
+            <div class="badge-item"><img src="../../assets/badges/stamp-track-restored.png" alt="Track Restored" /><span>Restored</span></div>
+            <div class="badge-item"><img src="../../assets/badges/stamp-theory-ace.png" alt="Theory Ace" /><span>Theory Ace</span></div>
+            <div class="badge-item"><img src="../../assets/badges/stamp-golden-ears.png" alt="Golden Ears" /><span>Golden Ears</span></div>
+          </div>
+          <button type="button" class="secondary-cta-lg" data-close-modal="statsModal">Done</button>
+        </div>
+      </div>
+
+      <!-- 5. Settings Drawer (Dark/Light + Pure Ear vs Show Note Names) -->
+      <div class="overlay-backdrop" id="settingsModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 class="modal-title">Bench Settings</h2>
+            <button type="button" class="close-btn" data-close-modal="settingsModal" aria-label="Close">✕</button>
+          </div>
+          <div class="setting-block">
+            <div class="setting-label">LAB SURFACE THEME</div>
+            <div class="segmented-two">
+              <button type="button" class="keycap-btn is-active" id="themeDarkBtn">Dark Sound-Lab</button>
+              <button type="button" class="keycap-btn" id="themeLightBtn">Light Lab-Bench</button>
+            </div>
+          </div>
+          <div class="setting-block">
+            <div class="setting-label">NOTE &amp; CHORD LABELS</div>
+            <div class="segmented-two">
+              <button type="button" class="keycap-btn is-active" id="labelsShowBtn">Show Names</button>
+              <button type="button" class="keycap-btn" id="labelsEarBtn">Pure Ear</button>
+            </div>
+          </div>
+          <button type="button" class="primary-cta-lg" data-close-modal="settingsModal">Apply &amp; Return</button>
+        </div>
+      </div>
+
+      <!-- 6. Mobile QA Jump Sheet (<1024px) -->
+      <div class="overlay-backdrop" id="mobileQaModal">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h2 class="modal-title">Visual Prototype QA Jump</h2>
+            <button type="button" class="close-btn" data-close-modal="mobileQaModal" aria-label="Close">✕</button>
+          </div>
+          <div class="cadence-grid" id="mobileQaGrid"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Desktop QA Side Rail (>= 1024px) -->
+    <aside class="qa-rail" aria-label="Prototype State Switcher">
+      <div class="qa-rail-title">VISUAL QA SWITCHER</div>
+      <div id="desktopQaList" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </aside>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =====================================================================
+         STRICTLY MOCKED VISUAL STATE (NO REAL THEORY MATH OR WEB AUDIO)
+         ===================================================================== */
+      const MELODY_NOTES = ['D4', 'Eb4', 'E4', 'F4', 'F#4', 'G4', 'Ab4', 'A4', 'Bb4', 'B4', 'C5'];
+      const CHORD_ROOTS = ['F', 'G', 'A', 'Bb', 'C', 'D'];
+      const CHORD_QUALS = ['Maj', 'min', '7', 'dim', 'sus'];
+      const BASS_NOTES = ['E2', 'F2', 'F#2', 'G2', 'Ab2', 'A2', 'Bb2', 'B2', 'C3'];
+
+      const THEORY_QUESTIONS = {
+        melody: {
+          prompt: 'Why did F#4 clash in Bar 2 over G7?',
+          options: ['Out-of-Key #4 / b5', 'Missing Octave Jump', 'Wrong Time Signature'],
+          correct: 0,
+          tag: 'Out-of-Key b5'
+        },
+        chords: {
+          prompt: 'What caused Stage 2’s clash in Bar 3?',
+          options: ['Major vs. Minor 3rd', 'Parallel Fifths', 'Suspended 2nd'],
+          correct: 0,
+          tag: 'Wrong 3rd (Maj/min)'
+        },
+        bass: {
+          prompt: 'Why did F#2 clash under A Min in Bar 3?',
+          options: ['Non-Chord Bass Root', 'Perfect 5th Doubling', 'Plagal Cadence'],
+          correct: 0,
+          tag: 'Missed Root'
+        },
+        cadence: {
+          prompt: 'Which tone creates the Dreamy Lydian lift?',
+          options: ['Raised #4 (B over F)', 'Flattened b2', 'Diminished 7th'],
+          correct: 0,
+          tag: 'Lydian #4'
+        }
+      };
+
+      const state = {
+        stage: 0, // 0..3 = melody, chords, bass, cadence; 4 = victory
+        unlocked: false,
+        playing: true,
+        muted: false,
+        mixMode: 'mix', // 'mix' | 'solo'
+        theme: 'dark',
+        noteLabels: 'show',
+        abMode: 'after', // 'after' | 'before'
+        playheadProgress: 0,
+        lastBeat: -1,
+        melody: {
+          slots: ['E4', 'G4', 'F#4', 'D4', 'C5', 'E5', 'A4', 'B4'],
+          faultIdx: 2,
+          selectedIdx: 2,
+          target: 'F4',
+          tries: 0,
+          status: 'broken',
+          star: false
+        },
+        chords: {
+          slots: ['C Maj', 'G7', 'A Maj', 'F Maj'],
+          faultIdx: 2,
+          selectedIdx: 2,
+          root: 'A',
+          qual: 'Maj',
+          targetRoot: 'A',
+          targetQual: 'min',
+          tries: 0,
+          status: 'locked',
+          star: false
+        },
+        bass: {
+          slots: ['C2', 'G2', 'F#2', 'F2'],
+          faultIdx: 2,
+          selectedIdx: 2,
+          target: 'A2',
+          tries: 0,
+          status: 'locked',
+          star: false
+        },
+        cadence: {
+          slots: ['C Maj', 'G7', 'A min', 'F min'],
+          faultIdx: 3,
+          selectedIdx: 3,
+          selectedCandidate: 'F min',
+          target: 'Fmaj7#11',
+          tries: 0,
+          status: 'locked',
+          star: false
+        },
+        pendingTheoryLayer: null
+      };
+
+      const LAYER_ORDER = ['melody', 'chords', 'bass', 'cadence'];
+      const $ = (id) => document.getElementById(id);
+
+      /* =====================================================================
+         Waveform SVG Builders (Broken Coral vs Healed Smooth vs Locked)
+         ===================================================================== */
+      function buildMiniWaveSvg(layerKey, status) {
+        const faultBar = layerKey === 'melody' ? 1 : (layerKey === 'cadence' ? 3 : 2);
+        const colorVar = status === 'locked' ? 'var(--state-locked)' : `var(--lane-${layerKey})`;
+        const isVictoryBefore = state.stage === 4 && state.abMode === 'before';
+        const showFault = status === 'broken' || isVictoryBefore;
+
+        let paths = '';
+        for (let b = 0; b < 4; b++) {
+          const x0 = b * 50 + 2;
+          const isBarBroken = showFault && b === faultBar;
+          if (isBarBroken) {
+            paths += `<path class="wave-glitch-anim" d="M${x0} 13 L${x0+7} 4 L${x0+14} 22 L${x0+21} 3 L${x0+28} 23 L${x0+35} 5 L${x0+42} 20 L${x0+46} 13" fill="none" stroke="var(--state-glitch)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+          } else if (status === 'locked') {
+            paths += `<path d="M${x0} 13 L${x0+46} 13" fill="none" stroke="var(--state-locked)" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.55"/>`;
+          } else {
+            const amp = layerKey === 'bass' ? 8 : 6;
+            paths += `<path class="wave-healed-anim" d="M${x0} 13 Q${x0+11} ${13-amp} ${x0+23} 13 T${x0+46} 13" fill="none" stroke="${colorVar}" stroke-width="2" stroke-linecap="round"/>`;
+          }
+        }
+        return `<svg class="mini-wave-svg" viewBox="0 0 200 26" preserveAspectRatio="none">${paths}</svg>`;
+      }
+
+      /* =====================================================================
+         Render All Lanes & Controls
+         ===================================================================== */
+      function render() {
+        const isVictory = state.stage === 4;
+        const lanesStack = $('lanesStack');
+        lanesStack.classList.toggle('is-victory', isVictory);
+        $('victoryBanner').classList.toggle('is-visible', isVictory);
+        $('abToggleBar').classList.toggle('is-visible', isVictory);
+
+        const activeLayer = isVictory ? null : LAYER_ORDER[state.stage];
+
+        LAYER_ORDER.forEach((key, idx) => {
+          const laneEl = $('lane-' + key);
+          const lState = state[key];
+          const expanded = !isVictory && state.stage === idx;
+          laneEl.classList.toggle('is-expanded', expanded);
+          laneEl.classList.toggle('is-collapsed', !expanded && !isVictory);
+          laneEl.dataset.status = (isVictory && state.abMode === 'before') ? 'broken' : lState.status;
+
+          const dimmed = !isVictory && state.mixMode === 'solo' && idx !== state.stage;
+          laneEl.classList.toggle('is-solo-dimmed', dimmed);
+
+          $('wave-' + key).innerHTML = buildMiniWaveSvg(key, lState.status);
+
+          // Badges
+          const badgesEl = $('badges-' + key);
+          let badgeHtml = '';
+          const effStatus = (isVictory && state.abMode === 'before') ? 'broken' : lState.status;
+          if (effStatus === 'locked') {
+            badgeHtml += '<span class="status-pill status-pill--locked">🔒 Pending</span>';
+          } else if (effStatus === 'broken') {
+            badgeHtml += `<span class="status-pill status-pill--broken">Fault · Bar ${key === 'melody' ? 2 : (key === 'cadence' ? 4 : 3)}</span>`;
+          } else if (effStatus === 'healed') {
+            badgeHtml += `<span class="status-pill status-pill--healed">🟢 ${lState.tries || 1} try</span>`;
+          } else {
+            badgeHtml += `<span class="status-pill status-pill--patched">🟡 ${lState.tries} tries</span>`;
+          }
+          if (lState.star) {
+            badgeHtml += '<span class="star-badge is-pop">⭐</span>';
+          }
+          badgesEl.innerHTML = badgeHtml;
+        });
+
+        renderStage1Melody();
+        renderStage2Chords();
+        renderStage3Bass();
+        renderStage4Cadence();
+        renderVictorySummary();
+        renderDock();
+      }
+
+      function renderStage1Melody() {
+        const grid = $('melodyGrid');
+        const m = state.melody;
+        const heightMap = { D4: 46, Eb4: 50, E4: 55, F4: 60, 'F#4': 64, G4: 70, Ab4: 75, A4: 82, Bb4: 88, B4: 94, C5: 100 };
+        grid.innerHTML = m.slots.map((note, idx) => {
+          const isFault = idx === m.faultIdx && m.status === 'broken';
+          const isFixed = idx === m.faultIdx && (m.status === 'healed' || m.status === 'patched');
+          const isSel = idx === m.selectedIdx;
+          const pct = heightMap[note] || 65;
+          const cls = ['melody-note-btn', isFault ? 'is-broken' : '', isSel ? 'is-selected' : '', isFixed ? 'is-healed-slot' : ''].join(' ');
+          return `<div class="melody-col" style="justify-content:flex-end;">
+            <button type="button" class="${cls}" style="margin-bottom:${Math.max(0, (pct - 46) * 0.65)}px" data-melody-slot="${idx}">
+              <span class="note-label-text">${note}</span>
+              <span class="note-ear-dot"></span>
+            </button>
+          </div>`;
+        }).join('');
+        const selNote = m.slots[m.selectedIdx];
+        $('melodyReadout').querySelector('span').textContent = `BAR ${Math.floor(m.selectedIdx / 2) + 1} · NOTE ${m.selectedIdx + 1}`;
+        $('melodyCurrentNote').textContent = selNote;
+      }
+
+      function renderStage2Chords() {
+        const c = state.chords;
+        $('chordsGrid').innerHTML = c.slots.map((val, idx) => {
+          const isFault = idx === c.faultIdx && c.status === 'broken';
+          const isSel = idx === c.selectedIdx;
+          const cls = ['bar-slot-card', isFault ? 'is-broken' : '', isSel ? 'is-selected' : ''].join(' ');
+          return `<button type="button" class="${cls}" data-chord-slot="${idx}">
+            <span class="bar-slot-tag">BAR ${idx + 1}</span>
+            <span class="bar-slot-val note-label-text">${val}</span>
+            <span class="note-ear-dot"></span>
+          </button>`;
+        }).join('');
+        $('chordRootLabel').textContent = c.root;
+        $('chordQualityRow').innerHTML = CHORD_QUALS.map((q) => {
+          const active = c.qual === q ? 'is-active' : '';
+          return `<button type="button" class="keycap-btn keycap-btn--flex ${active}" data-chord-qual="${q}">${q}</button>`;
+        }).join('');
+      }
+
+      function renderStage3Bass() {
+        const b = state.bass;
+        $('bassGrid').innerHTML = b.slots.map((val, idx) => {
+          const isFault = idx === b.faultIdx && b.status === 'broken';
+          const isSel = idx === b.selectedIdx;
+          const cls = ['bar-slot-card', isFault ? 'is-broken' : '', isSel ? 'is-selected' : ''].join(' ');
+          return `<button type="button" class="${cls}" data-bass-slot="${idx}">
+            <span class="bar-slot-tag">BAR ${idx + 1}</span>
+            <span class="bar-slot-val note-label-text">${val}</span>
+            <span class="note-ear-dot"></span>
+          </button>`;
+        }).join('');
+        document.querySelectorAll('[data-bass-pick]').forEach((btn) => {
+          btn.classList.toggle('is-active', b.slots[b.selectedIdx] === btn.dataset.bassPick);
+        });
+      }
+
+      function renderStage4Cadence() {
+        const cad = state.cadence;
+        $('cadenceGrid').innerHTML = cad.slots.map((val, idx) => {
+          const locked = idx < 3;
+          const isFault = idx === 3 && cad.status === 'broken';
+          const cls = ['bar-slot-card', locked ? 'is-locked-bar' : 'is-selected', isFault ? 'is-broken' : ''].join(' ');
+          return `<button type="button" class="${cls}" data-cadence-slot="${idx}">
+            <span class="bar-slot-tag">${locked ? 'LOCKED' : 'BAR 4'}</span>
+            <span class="bar-slot-val note-label-text" style="font-size:12px;">${val}</span>
+            <span class="note-ear-dot"></span>
+          </button>`;
+        }).join('');
+
+        const candidates = [
+          { val: 'F Maj', sub: 'Safe Diatonic IV' },
+          { val: 'Fmaj7#11', sub: 'Dreamy Lydian #4 Lift' },
+          { val: 'Fm6', sub: 'Melancholic Borrowed iv' },
+          { val: 'G7/F', sub: 'Tense Dominant Pedal' }
+        ];
+        $('cadenceOptions').innerHTML = candidates.map((opt) => {
+          const active = cad.selectedCandidate === opt.val ? 'is-active' : '';
+          return `<button type="button" class="cadence-option ${active}" data-cadence-pick="${opt.val}">
+            <span class="cadence-option-title note-label-text">${opt.val}</span>
+            <span class="cadence-option-sub">${opt.sub}</span>
+          </button>`;
+        }).join('');
+      }
+
+      function renderVictorySummary() {
+        const totalTaps = LAYER_ORDER.reduce((acc, k) => acc + Math.max(1, state[k].tries), 0);
+        const stars = LAYER_ORDER.reduce((acc, k) => acc + (state[k].star ? 1 : 0), 0);
+        const cleanAll = totalTaps === 4;
+        $('victoryTitle').textContent = cleanAll ? 'Chief Surgeon!' : 'Track Restored!';
+        $('victoryStampImg').src = cleanAll
+          ? '../../assets/badges/stamp-chief-surgeon.png'
+          : '../../assets/badges/stamp-track-restored.png';
+        $('victoryMetrics').textContent = `Precision: ${totalTaps}/4 taps · Theory Aces: ${stars}/4 ⭐`;
+
+        $('abBeforeBtn').className = 'ab-btn ' + (state.abMode === 'before' ? 'is-before-active' : '');
+        $('abAfterBtn').className = 'ab-btn ' + (state.abMode === 'after' ? 'is-after-active' : '');
+
+        const shareLines = [
+          `🩺 MEND #51 — ${cleanAll ? 'Chief Surgeon!' : 'Track Restored!'}`,
+          ...LAYER_ORDER.map((k) => {
+            const icon = k === 'melody' ? '🎵' : k === 'chords' ? '🎹' : k === 'bass' ? '🎸' : '✨';
+            const label = k.charAt(0).toUpperCase() + k.slice(1).padEnd(7, ' ');
+            const dot = (state[k].tries || 1) === 1 ? '🟢' : '🟡';
+            const tries = state[k].tries || 1;
+            const starTxt = state[k].star ? `⭐ ${THEORY_QUESTIONS[k].tag}` : '';
+            return `${icon} ${label} ${dot} (${tries} ${tries === 1 ? 'try' : 'tries'}) ${starTxt}`.trim();
+          }),
+          `Precision: ${totalTaps}/4 taps | Theory Aces: ${stars}/4 ⭐`
+        ];
+        $('sharePreviewText').textContent = shareLines.join('\n');
+      }
+
+      function renderDock() {
+        const isVictory = state.stage === 4;
+        $('checkCtaLabel').textContent = isVictory ? 'Share Results' : 'Check Fix';
+        $('soloMixBtn').classList.toggle('is-selected', state.mixMode === 'solo');
+        $('fullMixBtn').classList.toggle('is-selected', state.mixMode === 'mix');
+        $('playPauseBtn').classList.toggle('is-playing', state.playing);
+        $('playPauseBtn').setAttribute('aria-label', state.playing ? 'Pause Loop' : 'Play Loop');
+        $('playIconSvg').innerHTML = state.playing
+          ? '<rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" fill-opacity="0.18"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" fill-opacity="0.18"/>'
+          : '<polygon points="7 5 19 12 7 19 7 5" fill="currentColor" fill-opacity="0.18"/>';
+      }
+
+      /* =====================================================================
+         Visual Feedback & Stage Progression Hooks
+         ===================================================================== */
+      let toastTimer = null;
+      function showToast(msg, kind = 'ok') {
+        const el = $('toastBox');
+        el.textContent = msg;
+        el.className = `toast is-shown is-${kind}`;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('is-shown'), 2400);
+      }
+
+      function triggerWrongShake(layerKey) {
+        const laneEl = $('lane-' + layerKey);
+        laneEl.classList.remove('is-shaking');
+        void laneEl.offsetWidth;
+        laneEl.classList.add('is-shaking');
+        const barNum = layerKey === 'melody' ? 2 : (layerKey === 'cadence' ? 4 : 3);
+        showToast(`Still clashing — listen closely to Bar ${barNum}`, 'warn');
+        setTimeout(() => laneEl.classList.remove('is-shaking'), 400);
+      }
+
+      function triggerHealSweep(layerKey) {
+        const lState = state[layerKey];
+        lState.status = lState.tries <= 1 ? 'healed' : 'patched';
+        const laneEl = $('lane-' + layerKey);
+        laneEl.classList.remove('is-healing');
+        void laneEl.offsetWidth;
+        laneEl.classList.add('is-healing');
+        render();
+        showToast(`${layerKey.toUpperCase()} healed!`, 'ok');
+
+        setTimeout(() => {
+          laneEl.classList.remove('is-healing');
+          openTheorySheet(layerKey);
+        }, 420);
+      }
+
+      function openTheorySheet(layerKey) {
+        state.pendingTheoryLayer = layerKey;
+        const q = THEORY_QUESTIONS[layerKey];
+        $('theoryPrompt').textContent = q.prompt;
+        $('theoryOptions').innerHTML = q.options.map((opt, idx) =>
+          `<button type="button" class="theory-pill" data-theory-opt="${idx}">${opt}</button>`
+        ).join('');
+        $('theorySheet').classList.add('is-open');
+      }
+
+      function advanceAfterTheory() {
+        $('theorySheet').classList.remove('is-open');
+        const nextIdx = state.stage + 1;
+        state.stage = Math.min(4, nextIdx);
+        if (state.stage < 4) {
+          const nextKey = LAYER_ORDER[state.stage];
+          if (state[nextKey].status === 'locked') state[nextKey].status = 'broken';
+        }
+        render();
+      }
+
+      function handleCheckFix() {
+        if (state.stage === 4) {
+          openModal('shareModal');
+          return;
+        }
+        const key = LAYER_ORDER[state.stage];
+        const lState = state[key];
+        lState.tries += 1;
+
+        let solved = false;
+        if (key === 'melody') solved = lState.slots[lState.faultIdx] === lState.target;
+        if (key === 'chords') solved = lState.root === lState.targetRoot && lState.qual === lState.targetQual;
+        if (key === 'bass') solved = lState.slots[lState.faultIdx] === lState.target;
+        if (key === 'cadence') solved = lState.selectedCandidate === lState.target;
+
+        if (solved) {
+          triggerHealSweep(key);
+        } else {
+          render();
+          triggerWrongShake(key);
+        }
+      }
+
+      /* =====================================================================
+         Event Bindings
+         ===================================================================== */
+      function openModal(id) { $(id).classList.add('is-open'); }
+      function closeModal(id) { $(id).classList.remove('is-open'); }
+
+      document.querySelectorAll('[data-close-modal]').forEach((btn) => {
+        btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+      });
+
+      $('unlockAudioBtn').addEventListener('click', () => {
+        state.unlocked = true;
+        state.muted = false;
+        state.playing = true;
+        closeModal('unlockOverlay');
+        showToast('Audio Bench Powered On · 96 BPM', 'ok');
+      });
+
+      $('unlockMutedBtn').addEventListener('click', () => {
+        state.unlocked = true;
+        state.muted = true;
+        $('soundToggleBtn').classList.add('is-muted');
+        closeModal('unlockOverlay');
+        showToast('Visual-Only Mode Active', 'ok');
+      });
+
+      $('soundToggleBtn').addEventListener('click', () => {
+        state.muted = !state.muted;
+        $('soundToggleBtn').classList.toggle('is-muted', state.muted);
+        showToast(state.muted ? 'Audio Muted (Visual Mode)' : 'Audio Unmuted', 'ok');
+      });
+
+      $('helpBtn').addEventListener('click', () => openModal('helpModal'));
+      $('statsBtn').addEventListener('click', () => openModal('statsModal'));
+      $('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
+      $('openShareFromVictory').addEventListener('click', () => openModal('shareModal'));
+
+      $('copyShareBtn').addEventListener('click', () => {
+        const txt = $('sharePreviewText').textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).catch(() => {});
+        }
+        $('copyShareBtn').textContent = '✓ Copied to Clipboard!';
+        showToast('Diagnostic card copied!', 'ok');
+        setTimeout(() => { $('copyShareBtn').textContent = 'Copy Share Card'; }, 1800);
+      });
+
+      // Theme & Note Labels
+      function setTheme(t) {
+        state.theme = t;
+        document.documentElement.setAttribute('data-theme', t);
+        $('themeDarkBtn').classList.toggle('is-active', t === 'dark');
+        $('themeLightBtn').classList.toggle('is-active', t === 'light');
+      }
+      $('themeDarkBtn').addEventListener('click', () => setTheme('dark'));
+      $('themeLightBtn').addEventListener('click', () => setTheme('light'));
+
+      function setNoteLabels(mode) {
+        state.noteLabels = mode;
+        document.documentElement.setAttribute('data-note-labels', mode);
+        $('labelsShowBtn').classList.toggle('is-active', mode === 'show');
+        $('labelsEarBtn').classList.toggle('is-active', mode === 'ear-only');
+      }
+      $('labelsShowBtn').addEventListener('click', () => setNoteLabels('show'));
+      $('labelsEarBtn').addEventListener('click', () => setNoteLabels('ear-only'));
+
+      // Transport Controls
+      $('playPauseBtn').addEventListener('click', () => {
+        state.playing = !state.playing;
+        renderDock();
+      });
+      $('soloMixBtn').addEventListener('click', () => {
+        state.mixMode = 'solo';
+        render();
+      });
+      $('fullMixBtn').addEventListener('click', () => {
+        state.mixMode = 'mix';
+        render();
+      });
+      $('checkFixBtn').addEventListener('click', handleCheckFix);
+
+      // Stage 1 Melody Controls
+      $('melodyGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-melody-slot]');
+        if (!btn) return;
+        state.melody.selectedIdx = Number(btn.dataset.melodySlot);
+        renderStage1Melody();
+      });
+      function nudgeMelody(dir) {
+        const m = state.melody;
+        const cur = m.slots[m.selectedIdx];
+        const i = MELODY_NOTES.indexOf(cur);
+        const next = Math.max(0, Math.min(MELODY_NOTES.length - 1, i + dir));
+        m.slots[m.selectedIdx] = MELODY_NOTES[next];
+        renderStage1Melody();
+      }
+      $('melodyDownBtn').addEventListener('click', () => nudgeMelody(-1));
+      $('melodyUpBtn').addEventListener('click', () => nudgeMelody(1));
+
+      // Stage 2 Chords Controls
+      $('chordsGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-chord-slot]');
+        if (!btn) return;
+        state.chords.selectedIdx = Number(btn.dataset.chordSlot);
+        renderStage2Chords();
+      });
+      function updateChordSlot() {
+        const c = state.chords;
+        c.slots[c.selectedIdx] = c.qual === '7' ? `${c.root}7` : `${c.root} ${c.qual}`;
+        renderStage2Chords();
+      }
+      $('chordRootPrev').addEventListener('click', () => {
+        const i = CHORD_ROOTS.indexOf(state.chords.root);
+        state.chords.root = CHORD_ROOTS[(i - 1 + CHORD_ROOTS.length) % CHORD_ROOTS.length];
+        updateChordSlot();
+      });
+      $('chordRootNext').addEventListener('click', () => {
+        const i = CHORD_ROOTS.indexOf(state.chords.root);
+        state.chords.root = CHORD_ROOTS[(i + 1) % CHORD_ROOTS.length];
+        updateChordSlot();
+      });
+      $('chordQualityRow').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-chord-qual]');
+        if (!btn) return;
+        state.chords.qual = btn.dataset.chordQual;
+        updateChordSlot();
+      });
+
+      // Stage 3 Bass Controls
+      $('bassGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-bass-slot]');
+        if (!btn) return;
+        state.bass.selectedIdx = Number(btn.dataset.bassSlot);
+        renderStage3Bass();
+      });
+      function nudgeBass(dir) {
+        const b = state.bass;
+        const i = BASS_NOTES.indexOf(b.slots[b.selectedIdx]);
+        const next = Math.max(0, Math.min(BASS_NOTES.length - 1, i + dir));
+        b.slots[b.selectedIdx] = BASS_NOTES[next];
+        renderStage3Bass();
+      }
+      $('bassDownBtn').addEventListener('click', () => nudgeBass(-1));
+      $('bassUpBtn').addEventListener('click', () => nudgeBass(1));
+      document.querySelectorAll('[data-bass-pick]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.bass.slots[state.bass.selectedIdx] = btn.dataset.bassPick;
+          renderStage3Bass();
+        });
+      });
+
+      // Stage 4 Cadence Controls
+      $('cadenceOptions').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-cadence-pick]');
+        if (!btn) return;
+        state.cadence.selectedCandidate = btn.dataset.cadencePick;
+        state.cadence.slots[3] = btn.dataset.cadencePick;
+        renderStage4Cadence();
+      });
+
+      // Theory Diagnosis Sheet
+      $('theoryOptions').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-theory-opt]');
+        if (!btn || !state.pendingTheoryLayer) return;
+        const idx = Number(btn.dataset.theoryOpt);
+        const key = state.pendingTheoryLayer;
+        const correct = idx === THEORY_QUESTIONS[key].correct;
+        btn.classList.add(correct ? 'is-correct' : 'is-wrong');
+        if (correct) {
+          state[key].star = true;
+          showToast('⭐ Theory Ace Earned!', 'ok');
+        } else {
+          showToast('Good try — check the explanation next round', 'warn');
+        }
+        render();
+        setTimeout(advanceAfterTheory, 480);
+      });
+      $('theorySkipBtn').addEventListener('click', advanceAfterTheory);
+
+      // Victory A/B Toggle
+      $('abBeforeBtn').addEventListener('click', () => {
+        state.abMode = 'before';
+        render();
+        showToast('A/B: Listening to Original Broken Mix', 'warn');
+      });
+      $('abAfterBtn').addEventListener('click', () => {
+        state.abMode = 'after';
+        render();
+        showToast('A/B: Listening to Restored Mix', 'ok');
+      });
+
+      /* =====================================================================
+         Visual QA Jump Actions (Both Desktop Rail & Mobile QA Sheet)
+         ===================================================================== */
+      function jumpToPreset(preset) {
+        closeModal('unlockOverlay');
+        closeModal('shareModal');
+        closeModal('helpModal');
+        closeModal('statsModal');
+        closeModal('settingsModal');
+        closeModal('mobileQaModal');
+        $('theorySheet').classList.remove('is-open');
+
+        if (preset === 'unlock') {
+          openModal('unlockOverlay');
+          return;
+        }
+        if (preset === 'stage1') {
+          state.stage = 0;
+          state.melody = { ...state.melody, slots: ['E4', 'G4', 'F#4', 'D4', 'C5', 'E5', 'A4', 'B4'], selectedIdx: 2, status: 'broken', tries: 0, star: false };
+          state.chords.status = 'locked'; state.bass.status = 'locked'; state.cadence.status = 'locked';
+        } else if (preset === 'stage2') {
+          state.stage = 1;
+          state.melody.status = 'healed'; state.melody.tries = 1; state.melody.star = true; state.melody.slots[2] = 'F4';
+          state.chords = { ...state.chords, slots: ['C Maj', 'G7', 'A Maj', 'F Maj'], root: 'A', qual: 'Maj', status: 'broken', tries: 0, star: false };
+          state.bass.status = 'locked'; state.cadence.status = 'locked';
+        } else if (preset === 'stage3') {
+          state.stage = 2;
+          state.melody.status = 'healed'; state.melody.tries = 1; state.melody.star = true; state.melody.slots[2] = 'F4';
+          state.chords.status = 'healed'; state.chords.tries = 1; state.chords.star = true; state.chords.slots[2] = 'A min';
+          state.bass = { ...state.bass, slots: ['C2', 'G2', 'F#2', 'F2'], status: 'broken', tries: 0, star: false };
+          state.cadence.status = 'locked';
+        } else if (preset === 'stage4') {
+          state.stage = 3;
+          state.melody.status = 'healed'; state.melody.tries = 1; state.melody.star = true;
+          state.chords.status = 'healed'; state.chords.tries = 1; state.chords.star = true;
+          state.bass.status = 'patched'; state.bass.tries = 2; state.bass.star = true; state.bass.slots[2] = 'A2';
+          state.cadence = { ...state.cadence, slots: ['C Maj', 'G7', 'A min', 'F min'], selectedCandidate: 'F min', status: 'broken', tries: 0, star: false };
+        } else if (preset === 'shake') {
+          if (state.stage === 4) jumpToPreset('stage2');
+          render();
+          triggerWrongShake(LAYER_ORDER[state.stage]);
+          return;
+        } else if (preset === 'theory') {
+          jumpToPreset('stage2');
+          state.chords.status = 'healed'; state.chords.tries = 1;
+          render();
+          openTheorySheet('chords');
+          return;
+        } else if (preset === 'victory') {
+          state.stage = 4;
+          state.abMode = 'after';
+          state.melody.status = 'healed'; state.melody.tries = 1; state.melody.star = true;
+          state.chords.status = 'healed'; state.chords.tries = 1; state.chords.star = true;
+          state.bass.status = 'patched'; state.bass.tries = 2; state.bass.star = true;
+          state.cadence.status = 'healed'; state.cadence.tries = 1; state.cadence.star = true;
+        } else if (preset === 'share') {
+          jumpToPreset('victory');
+          openModal('shareModal');
+          return;
+        } else if (preset === 'howto') {
+          openModal('helpModal');
+          return;
+        } else if (preset === 'stats') {
+          openModal('statsModal');
+          return;
+        } else if (preset === 'theme') {
+          setTheme(state.theme === 'dark' ? 'light' : 'dark');
+          return;
+        }
+        render();
+      }
+
+      const QA_ITEMS = [
+        ['unlock', '1. Unlock Gate'],
+        ['stage1', '2. Stage 1: Melody'],
+        ['stage2', '3. Stage 2: Chords'],
+        ['stage3', '4. Stage 3: Bass'],
+        ['stage4', '5. Stage 4: Cadence'],
+        ['shake', '6. Wrong Shake'],
+        ['theory', '7. Theory ⭐ Card'],
+        ['victory', '8. Victory A/B'],
+        ['share', '9. Share Modal'],
+        ['howto', '10. How-to-Play'],
+        ['stats', '11. Stats & Seals'],
+        ['theme', '12. Toggle Theme']
+      ];
+
+      $('desktopQaList').innerHTML = QA_ITEMS.map(([id, label]) =>
+        `<button type="button" class="qa-jump-btn" data-qa-jump="${id}">${label}</button>`
+      ).join('');
+      $('mobileQaGrid').innerHTML = QA_ITEMS.map(([id, label]) =>
+        `<button type="button" class="keycap-btn" style="font-size:11px; justify-content:flex-start;" data-qa-jump="${id}">${label}</button>`
+      ).join('');
+
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-qa-jump]');
+        if (btn) jumpToPreset(btn.dataset.qaJump);
+      });
+      $('openQaBtn').addEventListener('click', () => openModal('mobileQaModal'));
+
+      /* =====================================================================
+         Synchronized 60fps Visual Playhead Loop (96 BPM -> 10.0s / 4 bars)
+         ===================================================================== */
+      const LOOP_MS = 10000;
+      let lastTs = performance.now();
+      function tickPlayhead(now) {
+        const dt = now - lastTs;
+        lastTs = now;
+        if (state.playing) {
+          state.playheadProgress = (state.playheadProgress + dt / LOOP_MS) % 1;
+          const beam = $('playheadBeam');
+          const trackW = beam.parentElement.clientWidth || 360;
+          beam.style.transform = `translate3d(${(state.playheadProgress * trackW).toFixed(2)}px, 0, 0)`;
+
+          const beatIdx = Math.floor(state.playheadProgress * 16);
+          if (beatIdx !== state.lastBeat) {
+            state.lastBeat = beatIdx;
+            const barIdx = Math.floor(beatIdx / 4);
+            const beatInBar = beatIdx % 4;
+            document.querySelectorAll('.ruler-bar').forEach((barEl, b) => {
+              barEl.classList.toggle('is-current-bar', b === barIdx);
+              barEl.querySelectorAll('.ruler-tick').forEach((t, ti) => {
+                t.classList.toggle('is-on', b === barIdx && ti === beatInBar);
+              });
+            });
+            const led = $('beatLed');
+            led.classList.add('is-beat');
+            setTimeout(() => led.classList.remove('is-beat'), 90);
+          }
+        }
+        requestAnimationFrame(tickPlayhead);
+      }
+
+      render();
+      requestAnimationFrame(tickPlayhead);
+    })();
+  </script>
+</body>
+</html>
