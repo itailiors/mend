@@ -55,7 +55,7 @@ export interface KeyValueStore {
   setItem(key: string, value: string): void;
 }
 
-function store(): KeyValueStore | null {
+export function store(): KeyValueStore | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage;
   } catch {

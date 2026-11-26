@@ -11,7 +11,9 @@ import {
   pickCadence, setBass, setChordQuality, skipTheory, stepChordRoot, summarize,
 } from '../game/state';
 import { buildShare } from '../game/share';
-import { type NoteLabels, type SaveData, type Theme, displayStreak, loadSave, recordWin, writeSave } from '../game/storage';
+import { type NoteLabels, type SaveData, type Theme, displayStreak, loadSave, recordWin, store, writeSave } from '../game/storage';
+import { DAILY_HUB_URL, DAILY_SHARE_URL, LAB_CHANGES_URL, buildDoneRecord, buildProgressRecord, dailyStatsOf, emitDaily, labMoveFor, labMoveUrl } from '../game/daily';
+import { localDateIso } from '../core/daily';
 import { ICONS, STAMPS, STAMP_ORDER } from './assets';
 import { type WaveState, miniWaveSvg } from './waves';
 
@@ -153,6 +155,14 @@ export class MendApp {
     const day = this.save.days[this.p.dateIso];
     this.save.days[this.p.dateIso] = { state: this.s, summary: summary ?? day?.summary ?? null };
     writeSave(this.save);
+    this.emitDaily();
+  }
+
+  /** Mirror today's state into `daily:v1:mend` for the Reharm Daily hub (never for ?day= previews). */
+  private emitDaily(): void {
+    if (this.p.dateIso !== localDateIso()) return;
+    const stats = dailyStatsOf(this.save.stats, this.p.dateIso);
+    emitDaily(isVictory(this.s) ? buildDoneRecord(this.p, summarize(this.p, this.s), stats) : buildProgressRecord(this.p, this.s, stats), store());
   }
 
   // ---------------------------------------------------------------------------
@@ -291,6 +301,7 @@ export class MendApp {
     $('lanesStack').classList.toggle('is-victory', victory);
     $('victoryBanner').classList.toggle('is-visible', victory);
     $('abToggleBar').classList.toggle('is-visible', victory);
+    this.renderBridge(victory);
 
     LAYERS.forEach((id, idx) => {
       const lane = $(`lane-${id}`);
@@ -436,6 +447,26 @@ export class MendApp {
           <span class="cadence-option-sub note-label-text">${esc(o.roman)} in ${keyShort(k)}</span></button>`,
       )
       .join('');
+  }
+
+  /** Reharm Daily strip count + the "next up" card and Lab chip inside the share modal. */
+  private renderBridge(victory: boolean): void {
+    const done = victory ? 1 : 0;
+    $('daily-mini-count').textContent = `${done}/1 today`;
+    $('daily-mini-dot').classList.toggle('is-done', victory);
+    $('daily-ritual-mini').setAttribute('aria-label', `Daily progress: ${done} of 1 puzzles played`);
+    $<HTMLAnchorElement>('dailyBackLink').href = DAILY_HUB_URL;
+    $<HTMLAnchorElement>('daily-ritual-mini').href = DAILY_HUB_URL;
+    $<HTMLAnchorElement>('dailyNextPractice').href = LAB_CHANGES_URL;
+    $<HTMLAnchorElement>('dailyNextCta').href = DAILY_SHARE_URL;
+    $('dailyNextCard').hidden = !victory;
+    const move = victory ? labMoveFor(this.p) : null;
+    $('dailyLabChipSlot').innerHTML = move
+      ? `<a class="daily-lab-chip" href="${esc(labMoveUrl(move))}" aria-label="Learn ${esc(move.label)} in Reharm Lab (opens Reharm Lab)">
+          <span class="daily-lab-mark" aria-hidden="true">RL</span>
+          <span class="daily-lab-title">Learn ${esc(move.label)} in Reharm Lab</span>
+          <span class="daily-lab-action" aria-hidden="true">Open Lab ↗</span></a>`
+      : '';
   }
 
   private renderVictory(): void {

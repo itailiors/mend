@@ -1,18 +1,44 @@
 /**
- * MEND audio engine — 100% client-side Tone.js synthesis, no audio files.
- *  - Every node is allocated once in init() (Rhodes keys, bell-pluck lead, warm bass, lo-fi kit);
- *    live edits only swap plain step arrays, so nudging never allocates mid-loop.
+ * MEND audio engine — client-side Tone.js, using Reharm's default sounds:
+ *  - Rhodes keys (recorded FluidR3 samples once decoded, Reharm's FM Rhodes until then or if they fail),
+ *    Reharm's FM "Bell" lead, soft triangle bass, lo-fi kick / rim / hat, same lo-fi filter + reverb + tremolo.
+ *  - Every node is allocated once in init(); live edits only swap plain step arrays, so nudging never
+ *    allocates mid-loop (the Rhodes sampler is built once, in the background, when its samples decode).
  *  - One '16n' transport callback reads the current step arrays: edits land on the next 16th,
  *    Before/After A/B swaps latch on the next beat.
  *  - Visual hooks: onBeat/onBarStart via Tone.Draw, playhead via one requestAnimationFrame loop.
  *  - Visual-only mode runs the same hooks from a performance.now() clock without an AudioContext.
  */
 import {
-  Compressor, FMSynth, Filter, MembraneSynth, MonoSynth, NoiseSynth, PolySynth, Reverb, Tremolo, Volume,
+  FMSynth, Filter, MembraneSynth, NoiseSynth, PolySynth, Reverb, Sampler, Synth, ToneAudioBuffer, Tremolo, Volume,
   getContext, getDraw, getTransport, immediate, start as toneStart,
 } from 'tone';
 import type { Groove, LayerId, TrackValues } from '../types';
 import { LOOP_BEATS, LOOP_STEPS, type StepEvent, buildSteps, makeSilentWavDataUri } from './arrangement';
+import { rhodesSampleUrls } from './samples';
+
+/** Reharm's "Rhodes" keys preset (FM fallback + sampler levels). */
+const RHODES = {
+  volume: -7,
+  sampled: { volume: 7, release: 0.8 },
+  synth: {
+    harmonicity: 3, modulationIndex: 2.2,
+    oscillator: { type: 'sine' as const }, modulation: { type: 'sine' as const },
+    envelope: { attack: 0.004, decay: 1.6, sustain: 0.32, release: 0.9 },
+    modulationEnvelope: { attack: 0.002, decay: 0.35, sustain: 0.08, release: 0.5 },
+  },
+};
+
+/** Reharm's "Bell" melody preset. */
+const BELL = {
+  volume: -9,
+  synth: {
+    harmonicity: 4, modulationIndex: 1.3,
+    oscillator: { type: 'sine' as const }, modulation: { type: 'triangle' as const },
+    envelope: { attack: 0.012, decay: 0.25, sustain: 0.62, release: 0.35 },
+    modulationEnvelope: { attack: 0.004, decay: 0.18, sustain: 0.05, release: 0.25 },
+  },
+};
 
 export interface EngineHooks {
   onBeat(beatIdx: number): void;
@@ -37,21 +63,34 @@ const FOCUS: Record<LayerId | 'mix', Record<Channel, number>> = {
   cadence: { melody: -10, chords: 2, bass: 1, drums: -60 },
 };
 
+/** Channel levels before focus trims: 0 dB so each voice sits at Reharm's own level. */
+const BASE: Record<Channel, number> = { melody: 0, chords: 0, bass: 0, drums: 0 };
+
 interface Voices {
   master: Volume;
   channels: Record<Channel, Volume>;
+  /** Reharm sends the rim through the reverb; this wet drum send follows the drums channel's focus. */
+  drumsWet: Volume;
   keys: PolySynth<FMSynth>;
   lead: PolySynth<FMSynth>;
-  bass: MonoSynth;
+  bass: Synth;
   kick: MembraneSynth;
   snare: NoiseSynth;
   hat: NoiseSynth;
+}
+
+/** The calls the scheduler makes on the keys voice, FM pool or sampler alike. */
+interface Playable {
+  triggerAttackRelease(note: number | number[], duration: number, time?: number, velocity?: number): unknown;
+  releaseAll(time?: number): unknown;
 }
 
 export type EngineStatus = 'locked' | 'ready';
 
 export class MendAudioEngine {
   private voices: Voices | null = null;
+  /** Rhodes sampler, set once its samples decode; the FM keys play until then. */
+  private keysSampler: Sampler | null = null;
   private initPromise: Promise<void> | null = null;
   private silentEl: HTMLAudioElement | null = null;
   private groove: Groove | null = null;
@@ -115,77 +154,82 @@ export class MendAudioEngine {
   private init(): Promise<void> {
     if (this.initPromise) return this.initPromise;
     this.initPromise = (async () => {
-      const master = new Volume(-3).toDestination();
-      const comp = new Compressor({ threshold: -16, ratio: 3, attack: 0.01, release: 0.2 }).connect(master);
-      const lofi = new Filter({ frequency: 9000, type: 'lowpass', rolloff: -12 }).connect(comp);
-      const reverb = new Reverb({ decay: 2.2, wet: 0.22, preDelay: 0.012 });
-      reverb.connect(lofi);
+      // Reharm's bus: master -4 dB <- lo-fi lowpass <- plate-ish reverb; keys through a tremolo.
+      const master = new Volume(-4).toDestination();
+      const lofi = new Filter({ frequency: 7800, type: 'lowpass', rolloff: -12 }).connect(master);
+      const reverb = new Reverb({ decay: 2.4, wet: 0.2, preDelay: 0.01 }).connect(lofi);
       await reverb.ready;
 
-      const ch = (db: number, wetSend: boolean): Volume => {
-        const v = new Volume(db);
-        v.connect(wetSend ? reverb : lofi);
-        return v;
-      };
+      const ch = (wetSend: boolean): Volume => new Volume(0).connect(wetSend ? reverb : lofi);
       const channels: Record<Channel, Volume> = {
-        melody: ch(-9, true),
-        chords: ch(-12, true),
-        bass: ch(-8, false),
-        drums: ch(-10, false),
+        melody: ch(true),
+        chords: ch(true),
+        bass: ch(false),
+        drums: ch(false),
       };
+      const drumsWet = ch(true);
 
-      // Warm electric piano (FM Rhodes) through a gentle tremolo.
-      const trem = new Tremolo({ frequency: 3.2, depth: 0.25, spread: 50 }).connect(channels.chords).start();
-      const keys = new PolySynth(FMSynth, {
-        harmonicity: 3,
-        modulationIndex: 1.6,
-        oscillator: { type: 'sine' },
-        modulation: { type: 'sine' },
-        envelope: { attack: 0.006, decay: 1.4, sustain: 0.35, release: 0.9 },
-        modulationEnvelope: { attack: 0.004, decay: 0.45, sustain: 0.15, release: 0.6 },
-      }).connect(trem);
-      keys.maxPolyphony = 20;
+      const tremolo = new Tremolo({ frequency: 3.6, depth: 0.22, spread: 60 }).connect(channels.chords).start();
+      const keys = new PolySynth(FMSynth, RHODES.synth).connect(tremolo);
+      keys.maxPolyphony = 24;
+      keys.volume.value = RHODES.volume;
 
-      // Bell-pluck lead.
-      const lead = new PolySynth(FMSynth, {
-        harmonicity: 2.01,
-        modulationIndex: 5,
-        oscillator: { type: 'sine' },
-        modulation: { type: 'triangle' },
-        envelope: { attack: 0.003, decay: 0.55, sustain: 0.28, release: 0.5 },
-        modulationEnvelope: { attack: 0.002, decay: 0.22, sustain: 0.05, release: 0.3 },
-      }).connect(channels.melody);
+      const lead = new PolySynth(FMSynth, BELL.synth).connect(channels.melody);
       lead.maxPolyphony = 6;
+      lead.volume.value = BELL.volume;
 
-      // Warm plucked sub bass.
-      const bass = new MonoSynth({
+      const bass = new Synth({
         oscillator: { type: 'triangle' },
-        filter: { Q: 1.2, type: 'lowpass', rolloff: -24 },
-        envelope: { attack: 0.005, decay: 0.3, sustain: 0.6, release: 0.25 },
-        filterEnvelope: { attack: 0.003, decay: 0.18, sustain: 0.35, release: 0.3, baseFrequency: 160, octaves: 2.6 },
+        envelope: { attack: 0.01, decay: 0.4, sustain: 0.55, release: 0.4 },
       }).connect(channels.bass);
+      bass.volume.value = -13;
 
-      // Subtle lo-fi kit.
-      const kick = new MembraneSynth({ pitchDecay: 0.035, octaves: 5, envelope: { attack: 0.001, decay: 0.34, sustain: 0, release: 0.1 } }).connect(channels.drums);
-      const snareFilter = new Filter({ frequency: 1800, type: 'bandpass', Q: 0.9 }).connect(channels.drums);
-      const snare = new NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 } }).connect(snareFilter);
-      snare.volume.value = -8;
-      const hatFilter = new Filter({ frequency: 7500, type: 'highpass' }).connect(channels.drums);
-      const hat = new NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 } }).connect(hatFilter);
-      hat.volume.value = -20;
+      const kick = new MembraneSynth({ pitchDecay: 0.03, octaves: 5, envelope: { attack: 0.001, decay: 0.32, sustain: 0, release: 0.1 } }).connect(channels.drums);
+      kick.volume.value = -15;
+      // MEND's backbeat 'snare' plays Reharm's rim.
+      const rimFilter = new Filter({ frequency: 1900, type: 'bandpass', Q: 1.2 }).connect(drumsWet);
+      const snare = new NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.001, decay: 0.09, sustain: 0, release: 0.05 } }).connect(rimFilter);
+      snare.volume.value = -22;
+      const hatFilter = new Filter({ frequency: 7000, type: 'highpass' }).connect(channels.drums);
+      const hat = new NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.001, decay: 0.035, sustain: 0, release: 0.02 } }).connect(hatFilter);
+      hat.volume.value = -34;
 
-      // Pre-allocate polyphonic voices now (silent velocity) so the loop never grows the pools.
+      // Warm a few voices per pool with a near-zero release (Reharm: long silent tails stutter the first downbeat).
       const t = immediate() + 0.05;
-      keys.triggerAttackRelease([48, 52, 55, 59, 62, 65, 69, 72].map(hz), 0.02, t, 0);
-      lead.triggerAttackRelease([67, 71, 74].map(hz), 0.02, t, 0);
+      const quick = { envelope: { release: 0.01 }, modulationEnvelope: { release: 0.01 } };
+      keys.set(quick);
+      keys.triggerAttackRelease([48, 52, 55, 59, 62, 65, 69].map(hz), 0.01, t, 0);
+      keys.set(RHODES.synth);
+      lead.set(quick);
+      lead.triggerAttackRelease([67, 71, 74].map(hz), 0.01, t, 0);
+      lead.set(BELL.synth);
 
-      this.voices = { master, channels, keys, lead, bass, kick, snare, hat };
+      this.voices = { master, channels, drumsWet, keys, lead, bass, kick, snare, hat };
       master.mute = this.muted;
       this.applyFocus(0);
       this.installTransport();
       if (this.groove) getTransport().bpm.value = this.groove.bpm;
+      void this.loadRhodesSamples(tremolo);
     })();
     return this.initPromise;
+  }
+
+  /** Decode the Rhodes samples in the background; the FM keys keep playing if this fails (offline). */
+  private async loadRhodesSamples(dest: Tremolo): Promise<void> {
+    try {
+      const entries = await Promise.all(
+        [...rhodesSampleUrls()].map(async ([midi, url]) => [midi, (await ToneAudioBuffer.fromUrl(url)).get()!] as const),
+      );
+      const s = new Sampler({ urls: Object.fromEntries(entries), release: RHODES.sampled.release }).connect(dest);
+      s.volume.value = RHODES.sampled.volume;
+      this.keysSampler = s;
+    } catch {
+      /* keep the FM Rhodes */
+    }
+  }
+
+  private get keysOut(): Playable {
+    return this.keysSampler ?? this.voices!.keys;
   }
 
   private installTransport(): void {
@@ -220,7 +264,7 @@ export class MendAudioEngine {
       const dur = Math.max(0.05, ev.dur * stepSec);
       switch (ev.voice) {
         case 'chords':
-          v.keys.triggerAttackRelease(ev.midis.map(hz), dur, time, ev.vel);
+          this.keysOut.triggerAttackRelease(ev.midis.map(hz), dur, time, ev.vel);
           break;
         case 'melody':
           v.lead.triggerAttackRelease(hz(ev.midis[0]!), dur, time, ev.vel);
@@ -278,12 +322,12 @@ export class MendAudioEngine {
     const v = this.voices;
     if (!v) return;
     const trims = FOCUS[this.focus];
-    const base: Record<Channel, number> = { melody: -9, chords: -12, bass: -8, drums: -10 };
-    (Object.keys(v.channels) as Channel[]).forEach((c) => {
-      const target = base[c] + trims[c];
-      if (ramp > 0) v.channels[c].volume.rampTo(target, ramp);
-      else v.channels[c].volume.value = target;
-    });
+    const set = (vol: Volume, target: number) => {
+      if (ramp > 0) vol.volume.rampTo(target, ramp);
+      else vol.volume.value = target;
+    };
+    (Object.keys(v.channels) as Channel[]).forEach((c) => set(v.channels[c], BASE[c] + trims[c]));
+    set(v.drumsWet, BASE.drums + trims.drums);
   }
 
   setMuted(m: boolean): void {
@@ -316,6 +360,7 @@ export class MendAudioEngine {
     if (v) {
       getTransport().stop();
       v.keys.releaseAll();
+      this.keysSampler?.releaseAll();
       v.lead.releaseAll();
       v.bass.triggerRelease();
     }
@@ -330,8 +375,8 @@ export class MendAudioEngine {
     const t = immediate() + 0.02;
     if (kind === 'melody') v.lead.triggerAttackRelease(hz(midis[0]!), 0.45, t, 0.8);
     if (kind === 'bass') v.bass.triggerAttackRelease(hz(midis[0]!), 0.6, this.mono('bass', t), 0.9);
-    if (kind === 'chord') v.keys.triggerAttackRelease(midis.map(hz), 0.9, t, 0.6);
-    if (context?.length) v.keys.triggerAttackRelease(context.map(hz), 0.9, t, 0.35);
+    if (kind === 'chord') this.keysOut.triggerAttackRelease(midis.map(hz), 0.9, t, 0.6);
+    if (context?.length) this.keysOut.triggerAttackRelease(context.map(hz), 0.9, t, 0.35);
   }
 
   auditionChord(chordMidis: number[], bassNote: number): void {
