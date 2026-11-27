@@ -17,10 +17,21 @@ function absoluteOgImage(siteUrl: string | undefined): Plugin {
       const html = bundle['index.html'];
       if (!siteUrl || !html || html.type !== 'asset') return;
       const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
-      html.source = String(html.source).replace(
-        /(<meta property="og:image" content=")\.?\/?([^"]+)"( ?\/?>)/,
-        (_m, pre: string, path: string, end: string) => `${pre}${base}${path}"${end}\n  <meta property="og:url" content="${base}"${end}`,
-      );
+      html.source = String(html.source)
+        .replace(
+          /(<meta property="og:image" content=")\.?\/?([^"]+)"( ?\/?>)/,
+          (_m, pre: string, path: string, end: string) =>
+            `${pre}${base}${path}"${end}\n  <meta property="og:url" content="${base}"${end}\n  <link rel="canonical" href="${base}"${end}`,
+        )
+        .replace(
+          /(<meta name="twitter:image" content=")\.?\/?([^"]+)"/,
+          (_m, pre: string, path: string) => `${pre}${base}${path}"`,
+        );
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${base}</loc></url>\n</urlset>\n`,
+      });
     },
   };
 }
